@@ -1,0 +1,295 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>BEAT COP: Donut Justice</title>
+<style>
+html,body{margin:0;height:100%;background:#111;overflow:hidden;touch-action:none;font-family:monospace;color:#fff;-webkit-user-select:none;user-select:none}
+canvas{position:fixed;left:0;top:0;image-rendering:pixelated}
+#hud{position:fixed;left:6px;top:6px;font-size:13px;line-height:16px;text-shadow:1px 1px #000;pointer-events:none}
+#bars div{height:6px;width:90px;background:#333;margin:2px 0}#bars i{display:block;height:100%}
+#radio{position:fixed;left:6px;right:120px;bottom:auto;top:84px;font-size:12px;color:#7f7;text-shadow:1px 1px #000;pointer-events:none}
+#obj{position:fixed;left:0;right:0;bottom:4px;text-align:center;font-size:12px;color:#ff6;text-shadow:1px 1px #000;pointer-events:none}
+.btn{position:fixed;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:bold;font-size:13px;text-align:center}
+#pauseB{position:fixed;right:110px;top:6px;padding:4px 8px;background:rgba(0,0,0,.5);border:1px solid #fff}
+#modal{position:fixed;inset:0;background:rgba(0,0,20,.85);display:none;align-items:center;justify-content:center;z-index:9}
+#box{background:#223;border:3px solid #fc3;padding:12px;max-width:520px;width:92%;max-height:90%;overflow:auto;font-size:14px}
+#box h2{margin:0 0 6px;color:#fc3;font-size:17px}#box button{display:block;width:100%;margin:5px 0;padding:9px;font:14px monospace;background:#335;color:#fff;border:2px solid #88a;border-radius:4px}
+#box button:active{background:#557}.meter{height:10px;background:#333;margin:3px 0}.meter i{display:block;height:100%}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="obj"></div>
+<div id="hud"><span id="clock"></span> | Score <span id="score">0</span> | Rep <span id="rep">50</span><br><span id="status"></span><div id="bars"><div><i id="hpb" style="background:#e33"></i></div><div><i id="stb" style="background:#3be"></i></div></div></div>
+<div id="radio"></div>
+<div id="pauseB">II</div>
+<div id="modal"><div id="box"></div></div>
+<script>
+"use strict";
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const T=16,P=12,N=72; // tile size, block period, map tiles
+let W,H,Z;
+function resize(){W=innerWidth;H=innerHeight;cv.width=W;cv.height=H;Z=Math.max(2,Math.round(Math.min(W,H)/200));layoutButtons();}
+// ---------- RNG / utils
+const R=Math.random,rnd=(a,b)=>a+R()*(b-a),ri=(a,b)=>Math.floor(rnd(a,b+1)),pick=a=>a[Math.floor(R()*a.length)];
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),clamp=(v,a,b)=>v<a?a:v>b?b:v;
+// ---------- MAP: 0 road,1 sidewalk,2 building,3 park,4 crosswalk
+const map=new Uint8Array(N*N),bcol=[];
+const isRoadC=v=>(v%P)<3;
+for(let y=0;y<N;y++)for(let x=0;x<N;x++){let t;
+ const rx=isRoadC(x),ry=isRoadC(y);
+ if(rx||ry)t=0;else if(x%P==3||x%P==P-1||y%P==3||y%P==P-1)t=1;else t=2;
+ if(x<1||y<1||x>=N-1||y>=N-1)t=2;
+ map[y*N+x]=t;}
+const blocks={};const BN=Math.floor(N/P);
+for(let by=0;by<BN;by++)for(let bx=0;bx<BN;bx++)blocks[bx+','+by]={col:pick(['#a65','#865','#669','#777','#596','#a87','#957']),name:pick(['Apartments','Pawn Shop','Laundromat','Pizza Place','Bank','Bodega','Arcade','Tax Office','Gym','Bookstore'])};
+if(1){const park=blocks['4,1'];park.name='Park';for(let y=1*P+4;y<1*P+P-1;y++)for(let x=4*P+4;x<4*P+P-1;x++)map[y*N+x]=3;}
+blocks['1,1'].name='POLICE';blocks['1,1'].col='#349';
+blocks['3,3'].name='DONUTS';blocks['3,3'].col='#e8a';
+blocks['4,4'].name='Bank';blocks['4,4'].col='#bb8';
+const tile=(x,y)=>(x<0||y<0||x>=N||y>=N)?2:map[(y|0)*N+(x|0)];
+const solidAt=(px,py)=>{const t=tile(px/T,py/T);return t==2};
+function blockCenter(bx,by){return{x:(bx*P+7.5)*T,y:(by*P+7.5)*T}}
+function doorOf(bx,by){return{x:(bx*P+7.5)*T,y:(by*P+P-1+.5)*T}} // south sidewalk
+const STATION=doorOf(1,1),DONUT=doorOf(3,3);
+// ---------- state
+const S={time:8*60,score:0,rep:50,hp:100,st:100,paused:false,modal:false,arrests:0,donuts:0,over:false,msgs:[],shake:0};
+const me={x:STATION.x,y:STATION.y+T*2,dir:0,anim:0,inCar:false,carry:null,tackle:0};
+const patrol={x:STATION.x+T*3,y:STATION.y+T*2.5,a:0,v:0,siren:false,police:true,col:'#fff'};
+let peds=[],cars=[],crimes=[],parts=[],floaters=[];
+const FIRST=['Vinnie','Barb','Dusty','Gus','Marge','Skeeter','Tony','Lulu','Clem','Rex','Dolores','Chad','Brenda','Moose','Earl'];
+const LAST=['Pastrami','McGillicuddy','Bonkowski','Fettucini','Schlotz','Wigglesworth','Dingle','Kowalczyk','Pfeiffer','Throckmorton'];
+const CRIMES={shoplift:{n:'Shoplifting',code:'10-SL',pts:100,flee:1},jaywalk:{n:'Jaywalking',code:'10-JW',pts:40,flee:0.4},vandal:{n:'Vandalism',code:'10-VD',pts:80,flee:0.8},mug:{n:'Mugging',code:'10-MG',pts:150,flee:1,hit:1},gta:{n:'Grand Theft Auto',code:'10-GTA',pts:250,car:1}};
+function randWalkTile(type){for(let i=0;i<500;i++){const x=ri(1,N-2),y=ri(1,N-2);if(map[y*N+x]==type)return{x:(x+.5)*T,y:(y+.5)*T}}return{x:T*4,y:T*4}}
+function mkPed(){const p=randWalkTile(1);return{x:p.x,y:p.y,dx:0,dy:0,t:0,name:pick(FIRST)+' '+pick(LAST),shirt:pick(['#c33','#3c3','#cc3','#c6c','#3cc','#fa3','#eee','#555']),skin:pick(['#fdb','#c96','#863','#fca']),hair:pick(['#222','#a62','#ee8','#888','#d33']),crime:null,state:'walk',cuffed:false,spd:rnd(18,28)};}
+for(let i=0;i<45;i++)peds.push(mkPed());
+function roadPoint(){const lines=[];for(let k=0;k*P<N;k++)lines.push((k*P+1.5)*T);
+ if(R()<.5)return{x:pick(lines),y:rnd(2,N-2)*T,a:pick([Math.PI/2,-Math.PI/2])};return{x:rnd(2,N-2)*T,y:pick(lines),a:pick([0,Math.PI])}}
+function mkCar(){const p=roadPoint();return{x:p.x,y:p.y,a:p.a,v:rnd(35,55),col:pick(['#d33','#36d','#ec3','#3a5','#eee','#a5c','#f80']),ai:true,lastI:-1,flee:false,stopped:0}}
+for(let i=0;i<16;i++)cars.push(mkCar());
+// ---------- detective case
+const CASE={active:true,found:0,solved:false,clues:[],suspects:[],culprit:null};
+(function(){const names=['Big Sal Fettucini','"Sprinkles" McGee','Prof. Cruller'];CASE.suspects=names;CASE.culprit=1;
+ const spots=[[0,4,'A trail of pink frosting... leads AWAY from the Bank. Someone with a sweet tooth.'],[5,2,'A receipt: "1x Ski mask (sprinkle pattern)". Paid in rolled pennies.'],[2,5,'Witness parrot says: "SQUAWK! TALL ONE! NOT A PROFESSOR! SQUAWK!"']];
+ for(const s of spots){const d=doorOf(s[0],s[1]);CASE.clues.push({x:d.x+T*2,y:d.y,text:s[2],got:false})}})();
+// ---------- radio
+function radio(t,c){S.msgs.unshift({t,c:c||'#7f7',life:9});if(S.msgs.length>4)S.msgs.pop();}
+function floatTxt(x,y,t,c){floaters.push({x,y,t,c:c||'#ff0',life:1.6})}
+// ---------- crimes
+function spawnCrime(){const types=['shoplift','jaywalk','vandal','mug','shoplift','jaywalk','gta'];const ty=pick(types);
+ if(ty=='gta'){const c=pick(cars.filter(c=>c.ai&&!c.flee&&dist(c,me)<T*40&&dist(c,me)>T*8));if(!c)return;c.flee=true;c.v=95;c.crime='gta';c.thief=mkPed();c.thief.crime='gta';radio('DISPATCH: 10-GTA! Stolen '+colName(c.col)+' sedan, all units! Ram it to stop it.','#f88');crimes.push({t:'gta',car:c});return;}
+ const cand=peds.filter(p=>!p.crime&&!p.cuffed&&dist(p,me)<T*35);if(!cand.length)return;const p=pick(cand);p.crime=ty;p.state='crime';p.ct=0;
+ const where=blockOf(p);radio('DISPATCH: '+CRIMES[ty].code+' '+CRIMES[ty].n+' near the '+where+'. Suspect: '+p.name.split(' ')[0]+', '+colName(p.shirt)+' shirt.','#ff8');
+ if(ty=='jaywalk'){const r=nearestRoad(p);if(r){p.tx=r.x;p.ty=r.y}}crimes.push({t:ty,ped:p});}
+function colName(c){return({'#c33':'red','#3c3':'green','#cc3':'yellow','#c6c':'purple','#3cc':'teal','#fa3':'orange','#eee':'white','#555':'grey','#d33':'red','#36d':'blue','#ec3':'yellow','#3a5':'green','#a5c':'purple','#f80':'orange'})[c]||'ugly'}
+function blockOf(p){const bx=Math.floor(p.x/T/P),by=Math.floor(p.y/T/P);const b=blocks[bx+','+by];return b?b.name:'outskirts'}
+function nearestRoad(p){const tx=p.x/T|0,ty=p.y/T|0;for(let r=1;r<6;r++)for(const[dx,dy]of[[r,0],[-r,0],[0,r],[0,-r]])if(tile(tx+dx,ty+dy)==0)return{x:(tx+dx*2+.5)*T,y:(ty+dy*2+.5)*T};return null}
+// ---------- input
+const keys={};let joy={x:0,y:0,active:false,id:null,ox:0,oy:0},btnA=false,btnB=false,btnS=false,pressA=false,pressB=false;
+addEventListener('keydown',e=>{if(!keys[e.code]){if(e.code=='Space'||e.code=='KeyJ')pressA=true;if(e.code=='KeyE'||e.code=='KeyK')pressB=true;if(e.code=='KeyP'||e.code=='Escape')togglePause();if(e.code=='KeyH')S.siren=!S.siren}keys[e.code]=true;if(e.code.startsWith('Arrow')||e.code=='Space')e.preventDefault()});
+addEventListener('keyup',e=>keys[e.code]=false);
+const buttons=[];function mkBtn(label,on,off){const d=document.createElement('div');d.className='btn';d.innerHTML=label;document.body.appendChild(d);
+ d.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();on()},{passive:false});d.addEventListener('touchend',e=>{e.preventDefault();off&&off()},{passive:false});
+ d.addEventListener('mousedown',e=>{on()});d.addEventListener('mouseup',e=>{off&&off()});buttons.push(d);return d}
+const bA=mkBtn('A<br><small>ACT</small>',()=>{pressA=true;btnA=true},()=>btnA=false);
+const bB=mkBtn('B<br><small>CAR</small>',()=>{pressB=true},null);
+const bS=mkBtn('RUN',()=>btnS=true,()=>btnS=false);
+const bH=mkBtn('🚨',()=>{S.siren=!S.siren},null);
+function layoutButtons(){const s=Math.max(56,Math.min(W,H)*0.16);const set=(d,r,b,k)=>{d.style.width=d.style.height=(s*k)+'px';d.style.right=r+'px';d.style.bottom=b+'px'};
+ if(!buttons.length)return;set(bA,16,s*0.9,1.1);set(bB,s*1.35,16,1);set(bS,s*1.35+s*1.05,s*0.2,0.8);set(bH,16,s*2.2,0.7);}
+document.getElementById('pauseB').addEventListener('click',togglePause);document.getElementById('pauseB').addEventListener('touchstart',e=>{e.preventDefault();togglePause()});
+cv.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){if(joy.id===null&&t.clientX<W*0.55){joy.id=t.identifier;joy.ox=t.clientX;joy.oy=t.clientY;joy.active=true;joy.x=joy.y=0}}},{passive:false});
+cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===joy.id){let dx=t.clientX-joy.ox,dy=t.clientY-joy.oy,m=Math.hypot(dx,dy),mx=50;if(m>mx){dx*=mx/m;dy*=mx/m}joy.x=dx/mx;joy.y=dy/mx}},{passive:false});
+const jend=e=>{for(const t of e.changedTouches)if(t.identifier===joy.id){joy.id=null;joy.active=false;joy.x=joy.y=0}};cv.addEventListener('touchend',jend);cv.addEventListener('touchcancel',jend);
+function inputVec(){let x=joy.x,y=joy.y;if(keys.KeyA||keys.ArrowLeft)x-=1;if(keys.KeyD||keys.ArrowRight)x+=1;if(keys.KeyW||keys.ArrowUp)y-=1;if(keys.KeyS||keys.ArrowDown)y+=1;const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}return{x,y,m:Math.min(1,m)}}
+// ---------- modal
+const modal=document.getElementById('modal'),box=document.getElementById('box');
+function showModal(html,btns){S.modal=true;modal.style.display='flex';box.innerHTML=html;for(const b of btns||[]){const e=document.createElement('button');e.innerHTML=b[0];e.onclick=()=>b[1]();box.appendChild(e)}}
+function closeModal(){S.modal=false;modal.style.display='none'}
+function togglePause(){if(S.modal&&!S.paused)return;S.paused=!S.paused;if(S.paused)showModal(`<h2>⏸ PAUSED — BEAT COP</h2>
+<b>Goal:</b> Survive your shift (08:00–16:00). Arrest perps, book them at the 🚓 POLICE station, do the paperwork, eat donuts, solve the Great Donut Heist.<br><br>
+<b>Touch:</b> left side = joystick · <b>A</b> act (tackle / cuff / buy donut / pick up clue / book) · <b>B</b> enter/exit car · <b>RUN</b> sprint (hold) · 🚨 siren<br>
+<b>Keys:</b> WASD/Arrows move · Space/J act · E/K car · Shift sprint · H siren · P/Esc pause<br><br>
+<b>Tips:</b> Red <b>!</b> = crime in progress. Chase, press A close by to tackle, A again to cuff. Cuffed perps follow you — walk or drive to the station door. Ram stolen cars with your cruiser until they stop. Yellow <b>?</b> = case clue. Pink dot on minimap = DONUTS. Running drains stamina; donuts fix everything.<br><br>
+Case: ${CASE.solved?'SOLVED':CASE.found+'/3 clues'} · Arrests: ${S.arrests} · Donuts: ${S.donuts}`,[['▶ Resume',()=>{S.paused=false;closeModal()}],['🔄 Restart shift',()=>location.reload()]]);else closeModal()}
+// ---------- interrogation
+const QUIRKS=[{n:'a softie',good:2,bad:-1},{n:'a tough nut',good:-1,bad:2},{n:'a hungry guy',good:1,bad:0,donut:3},{n:'a drama queen',good:1,bad:1}];
+function interrogate(p,done){const q=pick(QUIRKS);let coop=1,anger=0,round=0;const crime=CRIMES[p.crime]||CRIMES.shoplift;
+ const lines={good:['"Look, we all make mistakes. Wanna talk about it?"','"I get it. Rough week? Mine too."','"You seem like a decent person under the felony."'],bad:['*SLAMS TABLE* "TALK!"','"Your buddy already ratted you out!" (he did not)','*leans in uncomfortably close* "I have ALL NIGHT."'],donut:'"Donut? Glazed. Still warm."'};
+ const reply={up:['"...okay okay, maybe I did a LITTLE crime."','"Fine! But I want it on record I was framed by my own hands."','*sobs* "It was the sprinkles, they made me do it!"'],down:['"I want my lawyer. And a sandwich."','"I know my rights! I watched a TV show once!"','"..." *stares at wall*']};
+ function step(txt){const meter=`<div>Cooperation</div><div class="meter"><i style="width:${Math.min(100,coop*20)}%;background:#3c6"></i></div><div>Anger</div><div class="meter"><i style="width:${Math.min(100,anger*25)}%;background:#c33"></i></div>`;
+  if(coop>=5){let extra='';if(CASE.active&&!CASE.solved&&R()<.6)extra=`<br><br>🕵 <i>"Also... I heard ${CASE.suspects[CASE.culprit]} was bragging about free donuts for life."</i>`;
+   showModal(`<h2>CONFESSION!</h2>${p.name} sings like a canary. +100 pts, +3 rep.${extra}`,[['To the paperwork... 😩',()=>{S.score+=100;S.rep+=3;done(true)}]]);return}
+  if(anger>=4||round>=5){showModal(`<h2>Lawyered up.</h2>${p.name} says nothing further. ${anger>=4?'You may have yelled a bit much. -2 rep.':'You ran out of time.'}`,[['Ugh. Paperwork.',()=>{if(anger>=4)S.rep-=2;done(false)}]]);return}
+  showModal(`<h2>🗣 INTERROGATION — ${p.name}</h2><i>Charge: ${crime.n}. Your gut says they're ${q.n}.</i><br><br>${txt}<br>${meter}`,[
+   ['😇 Good cop: '+pick(lines.good),()=>{round++;coop+=q.good;if(q.good<0)anger+=0.5;step(q.good>0?pick(reply.up):pick(reply.down))}],
+   ['😠 Bad cop: '+pick(lines.bad),()=>{round++;coop+=q.bad;anger+=1;step(q.bad>0?pick(reply.up):pick(reply.down))}],
+   ['🍩 Offer donut'+(S.donuts?' ('+S.donuts+' left)':' (you have none)'),()=>{round++;if(S.donuts>0){S.donuts--;coop+=q.donut||1.5;anger=Math.max(0,anger-1);step('"...is this... Boston Cream?" *eyes moisten*')}else step('You pat your pockets. No donuts. Awkward silence.')}],
+   ['🤐 Silent treatment (stare)',()=>{round++;if(R()<.4){coop+=2;step('The silence gets to them. "OKAY STOP LOOKING AT ME LIKE THAT."')}else step('They stare back. You both blink. Nobody wins.')}]])}
+ step(`${p.name} sits in Room B, sweating. The coffee machine gurgles ominously.`)}
+// ---------- paperwork
+function typo(s){const a=s.split('');const i=ri(1,a.length-2);const m=ri(0,2);if(m==0){[a[i],a[i+1]]=[a[i+1],a[i]]}else if(m==1)a[i]=pick('aeiouxzq'.split(''));else a.splice(i,0,a[i]);return a.join('')}
+function paperwork(p,done){let errors=0,stage=0;const crime=CRIMES[p.crime]||CRIMES.shoplift;const t0=performance.now();
+ const forms=['Form 27-B/6 (Arrest)','Form 99-Q (Feelings About Arrest)','Form 12-Z (Request For More Forms)'];
+ function next(){stage++;if(stage==1){let opts=[p.name,typo(p.name),typo(p.name),typo(p.name)].sort(()=>R()-.5);
+   showModal(`<h2>📝 ${forms[0]}</h2>Box 1: Suspect's full legal name (spelled CORRECTLY, Officer):`,opts.map(o=>[o,()=>{if(o!=p.name){errors++;floatTxt(me.x,me.y,'TYPO!','#f55')}next()}]))}
+  else if(stage==2){const codes=Object.values(CRIMES).map(c=>c.code+' – '+c.n);codes.push('10-WTF – Unspecified Weirdness');
+   showModal(`<h2>📝 ${forms[0]}</h2>Box 7c: Select the crime code. (Sergeant Krupke is watching.)`,codes.sort(()=>R()-.5).map(c=>[c,()=>{if(!c.startsWith(crime.code+' '))errors++;next()}]))}
+  else if(stage==3){showModal(`<h2>📝 ${forms[1]}</h2>On a scale of 1–5, how did this arrest make you feel?`,[['1 – Nothing. I am the law.',next],['3 – Mild indigestion.',next],['5 – I need a donut.',()=>{next()}],['Leave blank',()=>{errors++;next()}]])}
+  else if(stage==4){let stamps=0;const need=3;const st0=performance.now();
+   const draw=()=>showModal(`<h2>📝 ${forms[2]}</h2>STAMP IN TRIPLICATE! Fast, before the copier jams.<br><br><div style="font-size:32px;text-align:center">${'✅'.repeat(stamps)}${'⬜'.repeat(need-stamps)}</div>`,[['🔨 STAMP',()=>{stamps++;if(stamps>=need){if(performance.now()-st0>4000){errors++;floatTxt(me.x,me.y,'COPIER JAMMED','#f55')}next()}else draw()}]]);draw()}
+  else{const secs=((performance.now()-t0)/1000)|0;const pts=Math.max(0,crime.pts-errors*30)+(secs<15?50:0);S.score+=pts;S.rep+=errors?-errors:2;
+   showModal(`<h2>${errors?'📎 Paperwork filed (badly)':'🏅 Flawless paperwork!'}</h2>Time: ${secs}s · Errors: ${errors}<br>${errors?'The Sergeant sighs so hard his mustache moves. ':'The Sergeant nods. Once. A rare honor. '}+${pts} pts<br><br><i>${pick(['Only 46 more forms till retirement.','The coffee is cold. It was always cold.','Your pen dies. Another pen dies. All pens die.'])}</i>`,[['Back to the beat 🚔',()=>{closeModal();done()}]])}}
+ showModal(`<h2>🗂 BOOKING: ${p.name}</h2>Charge: ${crime.n}. Before you can go, the city requires ${forms.length} forms. Typos will be penalized. Speed is rewarded.`,[['Begin the suffering',next]])}
+function book(p){S.arrests++;interrogate(p,()=>paperwork(p,()=>{peds=peds.filter(x=>x!=p);peds.push(mkPed());me.carry=null;}))}
+// ---------- case
+function caseSolve(){showModal(`<h2>🕵 THE GREAT DONUT HEIST</h2>Someone robbed the Bank's vault... of the employee donut fund. You have all 3 clues:<ul>${CASE.clues.map(c=>'<li>'+c.text+'</li>').join('')}</ul>Who's the culprit?`,CASE.suspects.map((s,i)=>[s,()=>{
+ if(i==CASE.culprit){CASE.solved=true;S.score+=1000;S.rep+=15;showModal(`<h2>🎉 CASE CLOSED!</h2>${s} confesses: "The sprinkle mask... it was too fabulous not to wear." +1000 pts, +15 rep. The Chief gives you a coupon for ONE free coffee.`,[['Heck yeah',closeModal]])}
+ else{S.rep-=5;showModal(`<h2>❌ Wrong suspect</h2>${s} has an airtight alibi (they were at a book club for people who hate donuts). -5 rep. Think harder, detective.`,[['Hmm...',closeModal]])}}]))}
+// ---------- update
+let spawnT=4,last=performance.now();
+function moveEnt(e,dx,dy,r){const nx=e.x+dx,ny=e.y+dy;let hit=false;
+ if(!solidAt(nx-r,e.y-r)&&!solidAt(nx+r,e.y-r)&&!solidAt(nx-r,e.y+r)&&!solidAt(nx+r,e.y+r))e.x=nx;else hit=true;
+ if(!solidAt(e.x-r,ny-r)&&!solidAt(e.x+r,ny-r)&&!solidAt(e.x-r,ny+r)&&!solidAt(e.x+r,ny+r))e.y=ny;else hit=true;return hit}
+function update(dt){
+ S.time+=dt*1.0; // 1 game min / sec
+ if(S.time>=16*60&&!S.over){S.over=true;showModal(`<h2>🌇 END OF SHIFT</h2>Score: ${S.score|0}<br>Arrests: ${S.arrests}<br>Reputation: ${S.rep|0}<br>Case: ${CASE.solved?'SOLVED 🏅':'Unsolved'}<br><br>${S.rep>70?'Commissioner material!':S.rep>40?'Decent cop. Average mustache.':'Desk duty. Forever.'}`,[['New shift',()=>location.reload()]]);return}
+ const iv=inputVec();const sprint=(keys.ShiftLeft||keys.ShiftRight||btnS)&&S.st>1;
+ if(pressB){pressB=false;if(me.inCar){me.inCar=false;me.x=patrol.x+Math.cos(patrol.a+Math.PI/2)*T*1.2;me.y=patrol.y+Math.sin(patrol.a+Math.PI/2)*T*1.2;if(solidAt(me.x,me.y)){me.x=patrol.x;me.y=patrol.y}patrol.v=0}else if(dist(me,patrol)<T*2.2){me.inCar=true;radio('You: "Unit 12, back in the cruiser."','#8cf')}else floatTxt(me.x,me.y-10,'Car too far','#aaa')}
+ if(me.inCar){const p=patrol;if(iv.m>0.15){const ta=Math.atan2(iv.y,iv.x);let d=ta-p.a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
+   if(Math.abs(d)>2.4&&p.v<20){p.v-=60*dt}else{p.a+=clamp(d,-3*dt,3*dt);p.v+=iv.m*140*dt}}
+  p.v*=Math.pow(0.4,dt);p.v=clamp(p.v,-40,sprint?190:150);
+  if(moveEnt(p,Math.cos(p.a)*p.v*dt,Math.sin(p.a)*p.v*dt,5)){if(Math.abs(p.v)>60){S.shake=.3;S.hp-=2}p.v*=-0.3}
+  me.x=p.x;me.y=p.y;p.siren=S.siren;
+  for(const pd of peds)if(!pd.cuffed&&dist(pd,p)<9&&Math.abs(p.v)>40){pd.x+=Math.cos(p.a)*12;pd.y+=Math.sin(p.a)*12;if(!pd.hitT){S.rep-=3;S.score-=50;floatTxt(pd.x,pd.y,'OW! -3 rep','#f55');radio('DISPATCH: Unit 12, citizen complaint: "a cop hit me with a car." Please don\'t.','#f88');pd.hitT=2}}
+ }else{const sp=(sprint?78:44)*(S.st<10?0.6:1);if(sprint&&iv.m>.1)S.st-=14*dt;else S.st=Math.min(100,S.st+4*dt);
+  if(me.tackle>0){me.tackle-=dt;moveEnt(me,Math.cos(me.dir)*120*dt,Math.sin(me.dir)*120*dt,4)}
+  else if(iv.m>.1){me.dir=Math.atan2(iv.y,iv.x);moveEnt(me,iv.x*sp*dt,iv.y*sp*dt,4);me.anim+=dt*(sprint?14:8)}}
+ S.st=clamp(S.st,0,100);
+ // action
+ if(pressA){pressA=false;action()}
+ // peds
+ for(const p of peds){if(p.hitT)p.hitT=Math.max(0,p.hitT-dt);
+  if(p.cuffed){if(p.follow){const d=dist(p,me);if(me.inCar){p.x=patrol.x;p.y=patrol.y;p.inCar=true}else{p.inCar=false;if(d>12){p.x+=(me.x-p.x)/d*60*dt;p.y+=(me.y-p.y)/d*60*dt}}}continue}
+  if(p.down>0){p.down-=dt;if(p.down<=0&&!p.cuffed){p.state='flee';floatTxt(p.x,p.y,'*wriggles free*','#fa0')}continue}
+  if(p.state=='crime'){p.ct+=dt;if(p.crime=='jaywalk'&&p.tx){const d=Math.hypot(p.tx-p.x,p.ty-p.y);if(d>3){p.x+=(p.tx-p.x)/d*15*dt;p.y+=(p.ty-p.y)/d*15*dt}}
+   if(p.crime=='vandal'&&R()<dt*3)parts.push({x:p.x+rnd(-6,6),y:p.y-4+rnd(-4,4),vx:0,vy:0,c:pick(['#f0f','#0ff','#ff0']),life:20,paint:1});
+   if(p.crime=='mug'&&p.ct>1&&!p.victim){const v=peds.find(q=>q!=p&&!q.crime&&dist(q,p)<T*6);if(v){p.victim=v;v.state='scared';floatTxt(v.x,v.y,'HELP!','#f55')}}
+   if(dist(p,me)<T*(me.inCar&&S.siren?9:5)&&R()<CRIMES[p.crime].flee*dt*3){p.state='flee';floatTxt(p.x,p.y,pick(['RUN!','Not today, pig!','Yikes!','*yeet*']),'#fa0')}
+   if(p.ct>60){p.crime=null;p.state='walk';S.rep-=2;radio('DISPATCH: Suspect got away. The public is "mildly disappointed".','#f88')}continue}
+  if(p.state=='flee'){const d=dist(p,me)||1;let fx=(p.x-me.x)/d,fy=(p.y-me.y)/d;const spd=(me.inCar?62:56)*(p.tired?0.6:1);p.tired=(p.tired||0)+dt*0.03>1;p.ft=(p.ft||0)+dt;
+   if(moveEnt(p,fx*spd*dt+rnd(-1,1),fy*spd*dt+rnd(-1,1),4)){const a=Math.atan2(fy,fx)+(R()<.5?1.6:-1.6);moveEnt(p,Math.cos(a)*spd*dt,Math.sin(a)*spd*dt,4)}
+   if(d>T*30){p.crime=null;p.state='walk';p.ft=0;S.rep-=3;radio('DISPATCH: You lost the suspect. Sergeant says "cardio, officer."','#f88')}continue}
+  if(p.state=='scared'){p.t-=dt;if(p.t<-4)p.state='walk';continue}
+  p.t-=dt;if(p.t<=0){p.t=rnd(1,4);const dirs=[[1,0],[-1,0],[0,1],[0,-1],[0,0]];const d=pick(dirs);p.dx=d[0];p.dy=d[1]}
+  const nx=p.x+p.dx*p.spd*dt,ny=p.y+p.dy*p.spd*dt;const tt=tile(nx/T,ny/T);if(tt==1||tt==3){p.x=nx;p.y=ny}else p.t=0;}
+ // cars
+ for(const c of cars){if(c.stopped>0){c.stopped-=dt;continue}
+  if(c.flee){const d=dist(c,me);c.v=me.inCar?100:70;if(d>T*45&&!c.busted){c.flee=false;c.v=45;S.rep-=4;radio('DISPATCH: Stolen vehicle lost. Insurance company sends a frowny face.','#f88');crimes=crimes.filter(k=>k.car!=c)}}
+  if(c.busted)continue;
+  const tx=Math.floor(c.x/T),ty=Math.floor(c.y/T),cx=(tx%P==1),cy=(ty%P==1);const id=tx*1000+ty;
+  if(cx&&cy&&id!=c.lastI){const fx=(tx+.5)*T,fy=(ty+.5)*T;if(Math.hypot(fx-c.x,fy-c.y)<4){c.lastI=id;c.x=fx;c.y=fy;
+    let opts=[0,Math.PI/2,Math.PI,-Math.PI/2].filter(a=>{const nx=tx+Math.round(Math.cos(a))*3,ny=ty+Math.round(Math.sin(a))*3;return tile(nx,ny)==0&&Math.abs(Math.cos(a-c.a)+1)>0.01});
+    if(c.flee){opts.sort((a,b)=>{const da=Math.hypot(c.x+Math.cos(a)*50-me.x,c.y+Math.sin(a)*50-me.y),db=Math.hypot(c.x+Math.cos(b)*50-me.x,c.y+Math.sin(b)*50-me.y);return db-da});if(opts.length)c.a=opts[0]}else if(opts.length)c.a=pick(opts)}}
+  // brake for player car / peds
+  let v=c.v;const ahead={x:c.x+Math.cos(c.a)*14,y:c.y+Math.sin(c.a)*14};if(!c.flee){if(dist(ahead,me)<12||peds.some(p=>dist(p,ahead)<8))v=0}
+  const nx=c.x+Math.cos(c.a)*v*dt,ny=c.y+Math.sin(c.a)*v*dt;if(tile(nx/T,ny/T)==2){c.a+=Math.PI;c.lastI=-1}else{c.x=nx;c.y=ny}
+  // ped hit by stolen car: knocked
+  if(!me.inCar&&dist(c,me)<9&&v>20){S.hp-=c.flee?15:5;S.shake=.3;me.x-=Math.cos(c.a)*-14;me.y+=Math.sin(c.a)*14;floatTxt(me.x,me.y,'OOF','#f55');if(!c.flee)c.stopped=1.5}
+  if(me.inCar&&dist(c,patrol)<12){if(c.flee&&Math.abs(patrol.v)>50){c.hp=(c.hp||3)-1;S.shake=.4;patrol.v*=0.3;floatTxt(c.x,c.y,'CRUNCH!','#fa0');if(c.hp<=0){c.busted=true;c.flee=false;radio('You: "Vehicle disabled! Hop out and cuff the driver!"','#8cf');const th=c.thief;th.x=c.x+8;th.y=c.y;th.state='flee';th.down=1.5;th.tired=1;peds.push(th);c.crimeDone=true}}
+   else{const d=dist(c,patrol)||1;patrol.x+=(patrol.x-c.x)/d*2;patrol.y+=(patrol.y-c.y)/d*2;if(Math.abs(patrol.v)>40){patrol.v*=-0.4;if(!c.flee){S.score-=10;floatTxt(c.x,c.y,'Fender bender -10','#f88')}}}}}
+ cars=cars.filter(c=>!(c.busted&&dist(c,me)>T*30));while(cars.length<16)cars.push(mkCar());
+ // auto-cuff check for busted, mugging damage
+ for(const p of peds)if(p.crime=='mug'&&p.state=='flee'&&dist(p,me)<10&&!me.inCar&&R()<dt){S.hp-=8;floatTxt(me.x,me.y,'*purse swing* -8','#f55')}
+ // book at station
+ if(me.carry&&dist(me,STATION)<T*1.8&&!S.modal){const p=me.carry;p.follow=false;book(p)}
+ // clues
+ for(const c of CASE.clues)if(!c.got&&dist(c,me)<T*1.2&&!me.inCar){c.got=true;CASE.found++;S.score+=150;showModal(`<h2>🔍 Clue ${CASE.found}/3</h2>${c.text}${CASE.found==3?'<br><br><b>All clues found! Return to the POLICE station and press A at the door to name the culprit.</b>':''}`,[['Noted 📓',closeModal]])}
+ // spawn crimes
+ spawnT-=dt;if(spawnT<=0){spawnT=rnd(9,16);if(crimes.filter(c=>c.ped?c.ped.crime:c.car&&c.car.flee).length<3)spawnCrime()}
+ crimes=crimes.filter(c=>c.ped?(c.ped.crime&&!c.ped.cuffed&&peds.includes(c.ped)):(c.car.flee||c.car.busted&&!c.car.crimeDone));
+ // random banter
+ if(R()<dt/25)radio(pick(['DISPATCH: Cat stuck in tree on 5th. Again. It\'s the same cat.','DISPATCH: Reports of a man "looking suspicious". He is just tall.','DISPATCH: Reminder: the break room microwave is NOT evidence.','DISPATCH: Code 10-DONUT, Sergeant wants a dozen. Glazed.','DISPATCH: Noise complaint: a guy practicing the bagpipes. Respond with empathy.']),'#9c9');
+ // hp/stamina
+ S.hp=Math.min(100,S.hp+dt*0.5);if(S.hp<=0){S.hp=60;S.score-=200;S.rep-=5;me.carry=null;for(const p of peds)if(p.cuffed&&p.follow){p.cuffed=false;p.follow=false;p.state='flee'}me.inCar=false;me.x=STATION.x;me.y=STATION.y+T;showModal('<h2>🏥 You passed out!</h2>You wake up at the station with a juice box. -200 pts, -5 rep. Eat more donuts.',[['Okay mom',closeModal]])}
+ S.rep=clamp(S.rep,0,100);
+ for(const f of floaters){f.life-=dt;f.y-=12*dt}floaters=floaters.filter(f=>f.life>0);
+ for(const p of parts){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt}parts=parts.filter(p=>p.life>0);
+ for(const m of S.msgs)m.life-=dt;S.msgs=S.msgs.filter(m=>m.life>0);if(S.shake>0)S.shake-=dt;
+}
+function action(){
+ if(me.inCar){if(dist(me,DONUT)<T*3){floatTxt(me.x,me.y,'Drive-thru closed. Walk, officer.','#aaa')}else{S.siren=!S.siren}return}
+ if(dist(me,DONUT)<T*1.8){S.donuts++;S.hp=Math.min(100,S.hp+30);S.st=100;S.score+=5;floatTxt(me.x,me.y-8,pick(['*nom* +HP','Glazed glory!','Sprinkles = power','Mmmm donut']),'#f8c');for(let i=0;i<8;i++)parts.push({x:me.x,y:me.y,vx:rnd(-30,30),vy:rnd(-30,30),c:pick(['#f8c','#ff0','#8ff','#fff']),life:.7});return}
+ if(dist(me,STATION)<T*1.8&&CASE.found>=3&&!CASE.solved){caseSolve();return}
+ // cuff downed perp
+ let tgt=null,bd=1e9;for(const p of peds){if(p.cuffed)continue;const d=dist(p,me);if(d<bd){bd=d;tgt=p}}
+ if(tgt&&tgt.down>0&&bd<14){if(me.carry){floatTxt(me.x,me.y,'Hands full! Book the first one.','#aaa');return}tgt.cuffed=true;tgt.follow=true;tgt.down=0;me.carry=tgt;S.score+=50;floatTxt(tgt.x,tgt.y,'CUFFED! Take to station','#6f6');radio('You: "Suspect in custody. Bringing them in."','#8cf');return}
+ if(tgt&&bd<22&&(tgt.crime)){if(S.st<15){floatTxt(me.x,me.y,'Too tired... need donut','#aaa');return}S.st-=15;me.tackle=.18;me.dir=Math.atan2(tgt.y-me.y,tgt.x-me.x);
+  if(bd<18||R()<.5){tgt.down=tgt.state=='flee'?2.5:3;S.shake=.2;floatTxt(tgt.x,tgt.y,'TACKLE! press A to cuff','#6f6')}else floatTxt(me.x,me.y,'*whiff*','#aaa');return}
+ if(tgt&&bd<22&&!tgt.crime){if(tgt.state!='scared'){const asIn=R()<.3;const lines=['"Nice day, officer."','"I didn\'t do it! ...Do what?"','"Is that a donut on your badge?"','"My cousin is a lawyer. Sort of."','"Have you tried the new maple bar?"'];
+   if(asIn&&CASE.active&&!CASE.solved)floatTxt(tgt.x,tgt.y-6,'"Heard the Bank lost its donut fund. Weird times."','#fff');else floatTxt(tgt.x,tgt.y-6,pick(lines),'#fff');}return}
+ if(dist(me,patrol)<T*2.2){floatTxt(me.x,me.y,'Press B to get in','#aaa')}
+}
+// ---------- render
+function px(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
+function drawPerson(x,y,shirt,skin,hair,anim,cop,down,cuffed){x=Math.round(x);y=Math.round(y);
+ if(down){px(x-6,y-1,12,5,shirt);px(x+4,y-1,3,3,skin);return}
+ const l=Math.sin(anim)*2;px(x-3,y+2+(l>0?0:1),2,4,cop?'#112':'#335');px(x+1,y+2+(l>0?1:0),2,4,cop?'#112':'#335');
+ px(x-4,y-3,8,6,shirt);if(cop){px(x-1,y-2,2,2,'#fd3');px(x-4,y+1,8,1,'#000')}
+ px(x-3,y-8,6,5,skin);px(x-3,y-9,6,2,cop?'#114':hair);if(cop)px(x-4,y-8,8,1,'#114');
+ px(x-2,y-6,1,1,'#000');px(x+1,y-6,1,1,'#000');if(cuffed){px(x-5,y,10,1,'#ccc')}}
+function drawCar(c,police){ctx.save();ctx.translate(Math.round(c.x),Math.round(c.y));ctx.rotate(c.a);
+ px(-9,-5,18,10,police?'#fff':c.col);if(police){px(-9,-5,5,10,'#123');px(4,-5,5,10,'#123')}px(-3,-4,5,8,'#9cf');px(3,-4,2,8,'#468');
+ px(-9,-6,4,1,'#111');px(5,-6,4,1,'#111');px(-9,5,4,1,'#111');px(5,5,4,1,'#111');px(8,-4,1,2,'#ff8');px(8,2,1,2,'#ff8');
+ if(police&&c.siren){const on=(performance.now()/150|0)%2;px(-1,-3,2,3,on?'#f22':'#511');px(-1,0,2,3,on?'#225':'#22f')}
+ if(c.busted){px(-6,-2,3,3,'#555');px(2,-1,2,2,'#555')}ctx.restore()}
+function render(){ctx.imageSmoothingEnabled=false;ctx.setTransform(1,0,0,1,0,0);px(0,0,W,H,'#222');
+ const vw=W/Z,vh=H/Z;let camx=me.x-vw/2,camy=me.y-vh/2;if(S.shake>0){camx+=rnd(-2,2);camy+=rnd(-2,2)}
+ ctx.setTransform(Z,0,0,Z,-Math.round(camx*Z),-Math.round(camy*Z));
+ const x0=Math.max(0,camx/T|0),y0=Math.max(0,camy/T|0),x1=Math.min(N,(camx+vw)/T+2|0),y1=Math.min(N,(camy+vh)/T+2|0);
+ for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const t=map[y*N+x],X=x*T,Y=y*T;
+  if(t==0){px(X,Y,T,T,'#3a3a40');const mx=x%P,my=y%P;if(mx==1&&my>=3&&y%2==0)px(X+7,Y,2,8,'#cc4');if(my==1&&mx>=3&&x%2==0)px(X,Y+7,8,2,'#cc4');
+   if((mx<3&&(my==3||my==P-1))||(my<3&&(mx==3||mx==P-1))){}
+   if(mx<3&&my<3){}else if(mx<3&&(my==3)){for(let i=0;i<T;i+=4)px(X+i,Y,2,T,'#ddd')}else if(my<3&&mx==3){for(let i=0;i<T;i+=4)px(X,Y+i,T,2,'#ddd')}}
+  else if(t==1){px(X,Y,T,T,'#999');px(X,Y,T,1,'#aaa');px(X,Y,1,T,'#888')}
+  else if(t==3){px(X,Y,T,T,'#4a3');if((x*7+y*3)%5==0){px(X+4,Y+2,8,8,'#284');px(X+7,Y+9,2,4,'#642')}}
+  else{const bx=Math.floor(x/P),by=Math.floor(y/P),b=blocks[bx+','+by]||{col:'#555'};px(X,Y,T,T,b.col);
+   if((x+y)%2==0)px(X+3,Y+4,4,5,'#cdf');else px(X+9,Y+6,4,5,'#235');px(X,Y+T-1,T,1,'rgba(0,0,0,.25)')}}
+ // building signs
+ for(const k in blocks){const[bx,by]=k.split(',').map(Number);const b=blocks[k];if(b.name=='Park')continue;const d=doorOf(bx,by);if(Math.abs(d.x-me.x)>vw||Math.abs(d.y-me.y)>vh)continue;
+  px(d.x-6,d.y-T-2,12,10,'#321');px(d.x-5,d.y-T-1,10,9,'#653');ctx.fillStyle=b.name=='POLICE'?'#9cf':b.name=='DONUTS'?'#f8c':'#fff';ctx.font='bold 7px monospace';ctx.textAlign='center';ctx.fillText(b.name.toUpperCase(),d.x,d.y-T*1.4);
+  if(b.name=='DONUTS'){ctx.beginPath();ctx.fillStyle='#d96';ctx.arc(d.x,d.y-T*2.4,7,0,7);ctx.fill();ctx.fillStyle='#f8c';ctx.beginPath();ctx.arc(d.x,d.y-T*2.4,6,0,7);ctx.fill();ctx.fillStyle=(blocks[k].col);ctx.beginPath();ctx.arc(d.x,d.y-T*2.4,2,0,7);ctx.fill()}
+  if(b.name=='POLICE'){const on=(performance.now()/400|0)%2;px(d.x-2,d.y-T*2.6,4,4,on?'#33f':'#f33')}}
+ for(const p of parts)if(p.paint)px(p.x,p.y,2,2,p.c);
+ for(const c of CASE.clues)if(!c.got){const b=Math.sin(performance.now()/200)*2;px(c.x-3,c.y-3,6,6,'#fd3');ctx.fillStyle='#000';ctx.font='bold 7px monospace';ctx.textAlign='center';ctx.fillText('?',c.x,c.y+2+b*0)}
+ const ents=[];for(const p of peds)if(!p.inCar)ents.push({y:p.y,d:()=>{drawPerson(p.x,p.y,p.shirt,p.skin,p.hair,performance.now()/120+p.x,false,p.down>0,p.cuffed);if(p.crime&&!p.cuffed){const b=Math.sin(performance.now()/150)*2;px(p.x-2,p.y-19+b,4,7,'#f22');px(p.x-2,p.y-11+b,4,2,'#f22')}if(p.crime=='mug'&&p.victim&&p.state=='crime'){}}});
+ for(const c of cars)ents.push({y:c.y,d:()=>{drawCar(c,false);if(c.flee){const b=Math.sin(performance.now()/150)*2;px(c.x-2,c.y-20+b,4,7,'#f22');px(c.x-2,c.y-12+b,4,2,'#f22')}}});
+ ents.push({y:patrol.y,d:()=>drawCar(patrol,true)});if(!me.inCar)ents.push({y:me.y,d:()=>drawPerson(me.x,me.y,'#24a','#fcb','#000',me.anim,true,me.tackle>0,false)});
+ ents.sort((a,b)=>a.y-b.y).forEach(e=>e.d());
+ for(const p of parts)if(!p.paint)px(p.x,p.y,2,2,p.c);
+ if(me.inCar&&S.siren){const on=(performance.now()/150|0)%2;ctx.fillStyle=on?'rgba(255,0,0,.08)':'rgba(0,0,255,.08)';ctx.fillRect(camx,camy,vw,vh)}
+ ctx.textAlign='center';ctx.font='bold 7px monospace';for(const f of floaters){ctx.fillStyle='#000';ctx.fillText(f.t,f.x+1,f.y-11);ctx.fillStyle=f.c;ctx.fillText(f.t,f.x,f.y-12)}
+ // off-screen arrows to crimes
+ ctx.setTransform(1,0,0,1,0,0);
+ for(const c of crimes){const e=c.ped||c.car;const sx=(e.x-camx)*Z,sy=(e.y-camy)*Z;if(sx>0&&sy>0&&sx<W&&sy<H)continue;const a=Math.atan2(sy-H/2,sx-W/2);const r=Math.min(W,H)/2-30;
+  ctx.save();ctx.translate(W/2+Math.cos(a)*r,H/2+Math.sin(a)*r);ctx.rotate(a);ctx.fillStyle='#f33';ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-6,-8);ctx.lineTo(-6,8);ctx.fill();ctx.restore()}
+ if(me.carry){const sx=(STATION.x-camx)*Z,sy=(STATION.y-camy)*Z;if(!(sx>0&&sy>0&&sx<W&&sy<H)){const a=Math.atan2(sy-H/2,sx-W/2),r=Math.min(W,H)/2-50;ctx.save();ctx.translate(W/2+Math.cos(a)*r,H/2+Math.sin(a)*r);ctx.rotate(a);ctx.fillStyle='#4af';ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-6,-8);ctx.lineTo(-6,8);ctx.fill();ctx.restore()}}
+ // minimap
+ const ms=Math.max(90,Math.min(W,H)*0.26)|0,mz=ms/N/T,mx0=W-ms-6,my0=6;ctx.globalAlpha=.85;px(mx0-2,my0-2,ms+4,ms+4,'#000');
+ if(!render.mm){const o=document.createElement('canvas');o.width=N;o.height=N;const oc=o.getContext('2d');for(let y=0;y<N;y++)for(let x=0;x<N;x++){const t=map[y*N+x];oc.fillStyle=t==0?'#555':t==1?'#888':t==3?'#3a3':'#223';const b=blocks[Math.floor(x/P)+','+Math.floor(y/P)];if(t==2&&b&&b.name=='POLICE')oc.fillStyle='#36c';if(t==2&&b&&b.name=='DONUTS')oc.fillStyle='#e6a';oc.fillRect(x,y,1,1)}render.mm=o}
+ ctx.imageSmoothingEnabled=false;ctx.drawImage(render.mm,mx0,my0,ms,ms);ctx.globalAlpha=1;
+ const dot=(e,c,s)=>px(mx0+e.x*mz-s/2,my0+e.y*mz-s/2,s,s,c);
+ for(const c of CASE.clues)if(!c.got)dot(c,'#fd3',4);for(const c of crimes)dot(c.ped||c.car,(performance.now()/250|0)%2?'#f22':'#fff',5);dot(patrol,'#8cf',3);dot(me,'#fff',4);
+ // joystick
+ if(joy.active){ctx.globalAlpha=.4;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(joy.ox,joy.oy,50,0,7);ctx.fill();ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(joy.ox+joy.x*50,joy.oy+joy.y*50,22,0,7);ctx.fill();ctx.globalAlpha=1}
+ else if('ontouchstart' in window){ctx.globalAlpha=.25;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(90,H-110,50,0,7);ctx.stroke();ctx.fillStyle='#fff';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText('drag to move',90,H-105);ctx.globalAlpha=1}
+}
+function hud(){const h=S.time/60|0,m=S.time%60|0;document.getElementById('clock').textContent='🕒 '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+ document.getElementById('score').textContent=S.score|0;document.getElementById('rep').textContent=S.rep|0;document.getElementById('hpb').style.width=S.hp+'%';document.getElementById('stb').style.width=S.st+'%';
+ document.getElementById('status').textContent=(me.inCar?'🚓 Driving':'🚶 On foot')+(me.carry?' · 🔗 '+me.carry.name:'')+' · 🍩'+S.donuts+' · 🕵'+(CASE.solved?'✔':CASE.found+'/3');
+ document.getElementById('radio').innerHTML=S.msgs.map(m=>`<div style="color:${m.c};opacity:${Math.min(1,m.life/2)}">📻 ${m.t}</div>`).join('');
+ let o='';if(me.carry)o='Bring '+me.carry.name.split(' ')[0]+' to the POLICE station (blue arrow)';else if(dist(me,DONUT)<T*1.8&&!me.inCar)o='Press A to buy a donut 🍩';else if(CASE.found>=3&&!CASE.solved)o='All clues found! Press A at the POLICE door to solve the case';else if(!me.inCar&&dist(me,patrol)<T*2.2)o='Press B to drive';else if(crimes.length)o='Respond to crimes (red !)';document.getElementById('obj').textContent=o}
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(!S.paused&&!S.modal&&!S.over)update(dt);render();hud();requestAnimationFrame(loop)}
+addEventListener('resize',resize);resize();
+radio('DISPATCH: Morning, Unit 12. Shift starts now. Try not to eat ALL the evidence.','#8cf');
+setTimeout(()=>radio('DISPATCH: Also, someone robbed the Bank\'s donut fund. Find the 3 yellow ? clues.','#fd3'),2500);
+requestAnimationFrame(loop);
+window.__S=S;window.__spawn=spawnCrime;
+</script></body></html>
