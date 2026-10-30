@@ -3,7 +3,7 @@ const SKINS=['#ffdbb5','#f0c090','#c88a5a','#8a5a3a','#5e3a22','#ffd0c0'];
 const HAIRC=['#1a1410','#5a3a1a','#a0602a','#e0c060','#c03020','#888','#ddd','#2a2a6a'];
 const SHIRTS=['#c33','#3a3','#cc3','#c6c','#3cc','#f93','#eee','#555','#36c','#933','#7a5','#f7a','#fa0','#468'];
 const PANTS=['#335','#224','#543','#444','#8a7a5a','#226','#633','#999'];
-function randLook(){return{skin:pick(SKINS),hair:pick(HAIRC),hs:ri(0,6),shirt:pick(SHIRTS),pants:pick(PANTS),shoes:pick(['#222','#fff','#a52','#333']),build:ri(0,2),ht:R()<.12?0:R()<.8?1:2,glasses:R()<.2,bag:R()<.2?pick(['#a52','#c3c','#333']):null,beard:R()<.15,hat:R()<.15?pick(['#c22','#228','#ec3','#333']):null,old:R()<.1}}
+function randLook(){return{skin:pick(SKINS),hair:pick(HAIRC),hs:ri(0,6),shirt:pick(SHIRTS),pants:pick(PANTS),shoes:pick(['#222','#fff','#a52','#333']),build:ri(0,2),ht:R()<.12?0:R()<.8?1:2,glasses:R()<.2,bag:R()<.2?pick(['#a52','#c3c','#333']):null,beard:R()<.15,hat:R()<.15?pick(['#c22','#228','#ec3','#333']):null,old:R()<.1,stache:R()<.12,headph:R()<.07?pick(['#f33','#3cf','#fff']):null,hood:R()<.08?pick(['#555','#933','#246']):null}}
 const COP_LOOK={skin:'#f0c090',hair:'#3a2a1a',hs:1,shirt:'#2c4cb0',pants:'#1a2550',shoes:'#111',build:1,ht:1,cop:true};
 function drawPersonFrame(g,L,dir,fr,ox,oy){const p=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(ox+x,oy+y,w,h)};
  const legL=[3,4,5][L.ht],torso=[4,6,7][L.ht],bw=[4,6,7][L.build],hx=6-2.5|0;const feet=21;const legTop=feet-legL+1,tTop=legTop-torso,hTop=tTop-5;const tx=6-Math.ceil(bw/2);
@@ -31,6 +31,9 @@ function drawPersonFrame(g,L,dir,fr,ox,oy){const p=(x,y,w,h,c)=>{g.fillStyle=c;g
  else{const hs=L.hs;if(hs==1||hs==2||hs==4||hs==5||hs==6){p(hx0,hTop-1,6,2,hc);if(dir==1)p(hx0,hTop,6,4,hc);if(dir==2)p(hx0,hTop,2,3,hc)}
   if(hs==2){p(hx0-1,hTop,1,5,hc);p(hx0+6,hTop,1,5,hc);if(dir==1)p(hx0-1,hTop,8,6,hc)}
   if(hs==3)p(hx0+2,hTop-2,2,3,hc);if(hs==4)p(hx0+2,hTop-3,2,2,hc);if(hs==6){p(hx0-1,hTop-2,8,2,hc)}}
+ if(L.hood){p(hx0-1,hTop-1,8,2,L.hood);p(hx0-1,hTop,1,5,L.hood);p(hx0+6,hTop,1,5,L.hood);if(dir==1)p(hx0-1,hTop-1,8,6,L.hood)}
+ if(L.mask){p(hx0,hTop-1,6,6,'#151515');if(dir==0){p(hx0+1,hTop+2,4,1,L.skin);p(hx0+1,hTop+2,1,1,'#111');p(hx0+4,hTop+2,1,1,'#111')}if(dir==2)p(hx0+3,hTop+2,3,1,L.skin)}
+ if(L.headph&&!L.cop){p(hx0-1,hTop+1,1,3,L.headph);p(hx0+6,hTop+1,1,3,L.headph);p(hx0,hTop-2,6,1,'#222')}
  if(L.old&&dir!=1)p(dir==2?10:tx+bw+1,tTop+1,1,feet-tTop-1,'#7a5a3a')}
 const sprCache=new Map();
 function personSprite(L){let s=sprCache.get(L);if(s)return s;const[c,g]=mkCanvas(12*10,22);for(let d=0;d<3;d++)for(let f=0;f<3;f++)drawPersonFrame(g,L,d,f,(d*3+f)*12,0);

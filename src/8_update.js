@@ -28,7 +28,7 @@ function chat(p){p.state='idle';p.wait=2;const C=S.case;let t=pick(['"Nice day, 
 function shout(){SFX.honk();vib(15);floatTxt(me.x,me.y-24,pick(['FREEZE!','STOP! POLICE!','HALT!','HEY YOU!']),'#ff6');
  for(const p of peds)if(p.state=='flee'&&dist(p,me)<T*7&&R()<.35){p.state='freeze';p.ft=1.6;floatTxt(p.x,p.y-24,'*FREEZES*','#6ff')}}
 function tackle(p){if(S.st<12){floatTxt(me.x,me.y-24,'TOO TIRED... DONUT?','#aaa');SFX.error();return}S.st-=12;me.tackle=.22;me.dir=Math.atan2(p.y-me.y,p.x-me.x);
- const d=dist(p,me);if(d<19||R()<.45){p.down=p.state=='flee'?2.6:3.2;p.ft=(p.ft||0)+4;S.shake=.25;SFX.tackle();vib(70);spark(p.x,p.y-4,6);for(let i=0;i<8;i++)parts.push({x:p.x,y:p.y,vx:rnd(-30,30),vy:rnd(-30,30),c:'#cbb',life:.5,s:2});floatTxt(p.x,p.y-24,CR[p.crime].minor?'TACKLED! A: TICKET':'TACKLED! A: CUFF','#6f6')}
+ const d=dist(p,me);if(d<19||R()<.45){p.down=p.state=='flee'?2.6:3.2;S.hitstop=.07;p.hitT=.25;p.ft=(p.ft||0)+4;S.shake=.25;SFX.tackle();vib(70);spark(p.x,p.y-4,6);for(let i=0;i<8;i++)parts.push({x:p.x,y:p.y,vx:rnd(-30,30),vy:rnd(-30,30),c:'#cbb',life:.5,s:2});floatTxt(p.x,p.y-24,CR[p.crime].minor?'TACKLED! A: TICKET':'TACKLED! A: CUFF','#6f6')}
  else{SFX.whiff();floatTxt(me.x,me.y-24,'*WHIFF*','#aaa');if(p.state=='crime')startFlee(p)}}
 function cuff(p){if(S.carry.length>=2){floatTxt(me.x,me.y-24,'HANDS FULL! BOOK THEM FIRST','#aaa');SFX.error();return}
  p.cuffed=true;p.down=0;p.state='cuffed';p.follow=true;S.carry.push(p);S.score+=50;SFX.cuff();vib([30,20,30]);floatTxt(p.x,p.y-24,'CUFFED! +50','#6f6');
@@ -43,8 +43,8 @@ function exitCar(){const p=patrol;const sp=Math.hypot(p.vx,p.vy);if(sp>50){float
  trail=[];S.carry.forEach((c,i)=>{c.inCar=false;c.x=p.x;c.y=p.y});SFX.door()}
 // ---------- main update
 function update(dt){
- S.time+=dt;if(S.boost>0)S.boost-=dt;if(S.complainT>0)S.complainT-=dt;if(S.crashT>0)S.crashT-=dt;
- if(S.time>=20*60){endShift();return}
+ if(S.hitstop>0){S.hitstop-=dt;return}S.time+=dt*(S.tscale||1);if(S.flash>0)S.flash-=dt;if(S.boost>0)S.boost-=dt;if(S.complainT>0)S.complainT-=dt;if(S.crashT>0)S.crashT-=dt;
+ if(S.time>=(S.end||1200)){endShift();return}
  smoothJoy(dt);const iv=inputVec();const running=(keys.ShiftLeft||keys.ShiftRight||IN.run);
  const act=getAction(),bAct=getB();S.act=act;S.bAct=bAct;
  if(IN.pressA){IN.pressA=false;act.fn();if(S.modal)return}
@@ -77,7 +77,7 @@ function updCity(dt){simT+=dt;
  cars=cars.filter(c=>!(c.busted&&Math.hypot(c.x-me.x,c.y-me.y)>T*30));while(cars.length<30){const c=mkCar();if(!c)break;cars.push(c)}
  // flee car lost
  for(const c of cars)if(c.flee&&Math.hypot(c.x-me.x,c.y-me.y)>T*48){c.flee=false;crimes=crimes.filter(k=>k.car!=c);repChange(-4);radio('DISPATCH: Stolen vehicle lost. Insurance company sends a frowny face.','#f88')}
- crimes=crimes.filter(k=>k.ped?(k.ped.crime&&!k.ped.cuffed&&peds.includes(k.ped)):k.car&&k.car.flee);
+ crimes=crimes.filter(k=>k.ped?(k.ped.crime&&!k.ped.cuffed&&peds.includes(k.ped)):k.car&&(k.car.flee||(k.car.offense&&!k.car.done)));
  S.spawnT-=dt;if(S.spawnT<=0){const hour=S.time/60;S.spawnT=rnd(8,15)-(hour-12)*.6;if(crimes.length<3+(hour>17?1:0))spawnCrime()}
  S.banterT-=dt;if(S.banterT<=0){S.banterT=rnd(25,45);radio(pick(['DISPATCH: Cat stuck in tree on 5th. Again. Same cat.','DISPATCH: Report of a man "looking suspicious". He is just tall.','DISPATCH: Reminder: the break room microwave is NOT evidence.','DISPATCH: 10-DONUT, Sergeant wants a dozen. Glazed.','DISPATCH: Bagpipe noise complaint. Respond with empathy.','DISPATCH: Someone is selling "slightly used" parking meters.','DISPATCH: All units: the vending machine has won again.']),'#9c9');SFX.radio()}
  if(S.caseDelay>0){S.caseDelay-=dt;if(S.caseDelay<=0){for(const p of peds)if(p.state=='witness'){p.state='walk';p.witness=null}newCase();radio(`SGT KRUPKE: New case: "${S.case.tpl.title}". Check the evidence board!`,'#fd6');SFX.radio()}}}

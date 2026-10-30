@@ -1,5 +1,5 @@
 "use strict";
-const VERSION='2.0.0';
+const VERSION='2.1.0';
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 const T=16,P=12,N=75,BN=6,TAU=Math.PI*2;
 let W=1,H=1,DPR=1,Z=3;

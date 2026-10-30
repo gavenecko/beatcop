@@ -6,13 +6,13 @@ const LAST=['Pastrami','McGillicuddy','Bonkowski','Fettucini','Schlotz','Wiggles
 const rname=()=>pick(FIRST)+' '+pick(LAST);
 let S,me,patrol,peds,cars,parts,floaters,crimes,trail;
 const cam={x:0,y:0,z:3};
-function newShift(){S={mode:'play',time:12*60,score:0,rep:50,hp:100,st:100,donuts:1,arrests:0,tickets:0,booked:0,held:[],carry:[],scene:'city',cityRet:null,paused:false,modal:false,shake:0,msgs:[],boost:0,spawnT:6,banterT:20,caseDelay:0,complainT:0,crashT:0,papers:0,siren:false,bigMap:false,stats:{conf:0,perfectForms:0,donutsEaten:0,cases:0},lastMsg:''};
+function newShift(){S={mode:'play',time:14*60,start:14*60,end:22*60,tscale:({short:1.6,normal:1,long:.65})[SAVE.shiftLen]||1,score:0,rep:50,hp:100,st:100,donuts:1,arrests:0,tickets:0,booked:0,held:[],carry:[],scene:'city',cityRet:null,paused:false,modal:false,shake:0,msgs:[],boost:0,spawnT:6,banterT:20,caseDelay:0,complainT:0,crashT:0,papers:0,siren:false,bigMap:false,stats:{conf:0,perfectForms:0,donutsEaten:0,cases:0},lastMsg:''};
  me={x:STATION.x,y:STATION.y+10,dir:Math.PI/2,anim:-1,inCar:false,tackle:0,L:COP_LOOK};
  patrol={x:STATION.x+40,y:1*PP+PP+36,a:0,vx:0,vy:0,f:0};patrol.y=2*PP+36;patrol.x=1*PP+100;
  peds=[];cars=[];parts=[];floaters=[];crimes=[];trail=[];
  for(let i=0;i<60;i++)peds.push(mkPed());for(let i=0;i<30;i++){const c=mkCar();if(c)cars.push(c)}
  cam.x=me.x;cam.y=me.y;newCase();
- radio('DISPATCH: Afternoon, Unit 12. Shift runs 12:00 to 20:00. Try not to eat the evidence.','#8cf');
+ radio('DISPATCH: Afternoon, Unit 12. Shift runs 14:00 to 22:00, into the night. Try not to eat the evidence.','#8cf');
  setTimeout(()=>S&&radio(`SGT KRUPKE: New case on the evidence board: "${S.case.tpl.title}". Swing by the station.`,'#fd6'),3000)}
 // ---------- peds
 function randTile(test){for(let i=0;i<800;i++){const x=ri(1,N-2),y=ri(1,N-2);if(test(map[y*N+x],x,y))return{x,y}}return{x:4,y:3}}
@@ -52,7 +52,7 @@ function crimeBehave(p,dt){p.ct+=dt;const c=CR[p.crime];p.anim=-1;
  const near=dist(p,me)<T*(me.inCar&&S.siren?10:5.5);if(near&&R()<(c.flee||0)*dt*3)startFlee(p);
  if(p.ct>75){p.crime=null;p.state='walk';repChange(-2);radio('DISPATCH: Suspect left the scene. Public is "mildly disappointed."','#f88')}}
 function startFlee(p){p.state='flee';p.ft=0;floatTxt(p.x,p.y-22,pick(['RUN!','NOT TODAY!','YIKES!','*YEET*','COPS!']),'#fa0');SFX.whiff();if(p.victim){p.victim.state='walk';p.victim=null}}
-function fleeBehave(p,dt){p.ft+=dt;const tired=clamp(1-p.ft/30,0.62,1);const spd=(p.crime=='warrant'?66:60)*tired*(p.boostT>0?1.3:1);
+function fleeBehave(p,dt){p.ft+=dt;const tired=clamp(1-p.ft/30,0.62,1);const spd=fleeSpd(p)*tired*(p.boostT>0?1.3:1);
  const ax=p.x-me.x,ay=p.y-me.y,d=Math.hypot(ax,ay)||1;let best=null,bs=-1e9;
  for(let i=0;i<8;i++){const a=i*TAU/8;const nx=p.x+Math.cos(a)*18,ny=p.y+Math.sin(a)*18;if(solidCity(nx,ny))continue;const s=(Math.cos(a)*ax+Math.sin(a)*ay)/d+(p.lastA!=null?Math.cos(a-p.lastA)*0.6:0)+R()*.2;if(s>bs){bs=s;best=a}}
  if(best!=null){p.lastA=best;moveCircle(p,Math.cos(best)*spd*dt,Math.sin(best)*spd*dt,4,solidCity);p.dir=best;p.anim+=dt*spd*.35}
@@ -93,9 +93,9 @@ function spark(x,y,n){for(let i=0;i<n;i++)parts.push({x,y,vx:rnd(-60,60),vy:rnd(
 function updPatrol(dt,iv,boost){const p=patrol;let hx=Math.cos(p.a),hy=Math.sin(p.a);let f=p.vx*hx+p.vy*hy,lat=-p.vx*hy+p.vy*hx;
  if(iv.m>.12){const ta=Math.atan2(iv.y,iv.x),d=angDiff(p.a,ta);
   if(Math.abs(d)>2.4&&f<25){f-=iv.m*120*dt;const d2=angDiff(p.a,ta+Math.PI);p.a+=clamp(d2*3,-2.4,2.4)*dt*Math.min(1,Math.abs(f)/25)}
-  else{const thr=iv.m*(boost?280:180)*(Math.abs(d)>1.4?.35:1);f+=thr*dt;p.a+=clamp(d*4.5,-3.4,3.4)*dt*clamp(Math.abs(f)/40,.3,1)}}
+  else{const thr=iv.m*(boost?280:180)*(SAVE.upg&&SAVE.upg.engine?1.2:1)*(Math.abs(d)>1.4?.35:1);f+=thr*dt;p.a+=clamp(d*4.5,-3.4,3.4)*dt*clamp(Math.abs(f)/40,.3,1)}}
  else f*=Math.pow(.25,dt);
- f*=Math.pow(boost?.7:.6,dt);f=clamp(f,-70,boost?215:160);lat*=Math.pow(boost?.02:.002,dt);
+ f*=Math.pow(boost?.7:.6,dt);f=clamp(f,-70,(boost?215:160)*(SAVE.upg&&SAVE.upg.engine?1.18:1));lat*=Math.pow(boost?.02:.002,dt);
  hx=Math.cos(p.a);hy=Math.sin(p.a);p.vx=hx*f-hy*lat;p.vy=hy*f+hx*lat;p.f=f;
  const pre={x:p.vx,y:p.vy};const hit=moveCircle(p,p.vx*dt,p.vy*dt,6,solidCity);
  if(hit){const imp=Math.abs(hit&1?pre.x:0)+Math.abs(hit&2?pre.y:0);if(hit&1)p.vx*=-.25;if(hit&2)p.vy*=-.25;if(imp>70&&S.crashT<=0){S.crashT=.4;SFX.crash();vib(50);S.shake=.35;spark(p.x+hx*10,p.y+hy*10,10);hurt(imp/30)}}
@@ -108,12 +108,12 @@ function updPatrol(dt,iv,boost){const p=patrol;let hx=Math.cos(p.a),hy=Math.sin(
  for(const pd of peds){if(pd.cuffed||pd.inCar||pd.down>0)continue;if(dist(pd,p)<9&&Math.hypot(p.vx,p.vy)>40){pd.down=2;pd.x+=p.vx*.1;pd.y+=p.vy*.1;moveCircle(pd,0,0,3,solidCity);SFX.hurt();vib(40);
   if(pd.crime&&pd.state=='flee'){floatTxt(pd.x,pd.y-20,'BUMPER TACKLE?!','#fa0');pd.down=3;repChange(-1)}else{repChange(-4);S.score-=40;floatTxt(pd.x,pd.y-20,'OW! -4 REP','#f55');if(S.complainT<=0){S.complainT=10;radio('DISPATCH: Complaint: "a cop hit me with a car." Please stop doing that.','#f88')}}}}}
 function bustCar(c){c.busted=true;c.flee=false;c.v=0;SFX.fanfare();radio('YOU: "Vehicle disabled! Driver is bailing!"','#8cf');const th=mkPed(c.thiefLook);th.x=c.x+12;th.y=c.y;moveCircle(th,0,0,4,solidCity);th.crime='gta';th.name=c.thiefName;th.state='flee';th.down=2.2;th.ft=10;peds.push(th);crimes.forEach(k=>{if(k.car==c){k.car=null;k.ped=th}})}
-function hurt(n){S.hp-=n;S.shake=Math.max(S.shake,.25);vib(30);SFX.hurt()}
+function hurt(n){S.hp-=n;S.flash=.35;S.shake=Math.max(S.shake,.3);vib(30);SFX.hurt()}
 function repChange(n){S.rep=clamp(S.rep+n,0,100)}
 // ---------- crimes
 function colName(c){return({'#c33':'red','#3a3':'green','#cc3':'yellow','#c6c':'purple','#3cc':'teal','#f93':'orange','#eee':'white','#555':'grey','#36c':'blue','#933':'maroon','#7a5':'olive','#f7a':'pink','#fa0':'orange','#468':'navy','#c22':'red','#25b':'blue','#eb2':'yellow','#2a5':'green','#ddd':'white','#93c':'purple','#f80':'orange','#333':'black','#7ad':'sky-blue','#a63':'brown','#5c5':'lime','#e5a':'pink'})[c]||'ugly'}
 function where(o){const b=blockAt(o.x,o.y);return b?(b.type=='park'?'the park':b.type=='park2'?'the plaza':b.name.toLowerCase().replace('&',' & ')):'the edge of town'}
-function spawnCrime(){const hour=S.time/60;const pool=['shoplift','shoplift','jaywalk','jaywalk','litter','noise','vandal','mug','gta'];if(hour>17)pool.push('mug','vandal','gta');const ty=pick(pool);
+function spawnCrime(force){const hour=S.time/60;const pool=['shoplift','shoplift','jaywalk','jaywalk','litter','noise','vandal','mug','gta'];if(hour>17)pool.push('mug','vandal','gta');const ty=force||pick(pool);
  if(ty=='gta'){const c=pick(cars.filter(c=>!c.flee&&!c.busted&&Math.hypot(c.x-me.x,c.y-me.y)>T*8&&Math.hypot(c.x-me.x,c.y-me.y)<T*35));if(!c)return;c.flee=true;c.hp=3;c.thiefLook=randLook();c.thiefName=rname();crimes.push({t:'gta',car:c});
   radio(`DISPATCH: ${CR.gta.code}! Stolen ${colName(c.col)} ${c.type} near ${where(c)}. Ram it to stop it!`,'#f88');SFX.radio();return}
  const cand=peds.filter(p=>p.state=='walk'&&!p.crime&&dist(p,me)<T*32&&dist(p,me)>T*4);if(!cand.length)return;const p=pick(cand);p.crime=ty;p.state='crime';p.ct=0;

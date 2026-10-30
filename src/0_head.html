@@ -11,8 +11,10 @@ canvas#c{position:fixed;left:0;top:0;width:100%;height:100%;image-rendering:pixe
 #hud .row{background:rgba(8,10,25,.72);border:2px solid #000;box-shadow:inset 0 0 0 1px #445;padding:3px 6px;margin-bottom:3px;display:inline-block}
 .bar{height:7px;width:110px;background:#222;border:1px solid #000;margin:2px 0;position:relative}.bar i{display:block;height:100%}
 .bar b{position:absolute;left:-14px;top:-4px;font-size:9px}
-#radio{position:fixed;left:6px;pointer-events:none;font-size:11px;line-height:13px;max-width:62%}
-#radio div{background:rgba(0,20,0,.7);border-left:3px solid #4f4;padding:2px 5px;margin-top:2px}
+#radio{position:fixed;left:6px;top:58px;font-size:11px;line-height:14px;overflow:hidden;cursor:pointer}
+#radio div{background:rgba(0,20,0,.75);border-left:3px solid #4f4;padding:2px 5px;white-space:nowrap;overflow:hidden}
+#radio .tk{display:inline-block}#radio .q{color:#fff;background:#363;padding:0 3px}
+@keyframes tk{0%,22%{transform:translateX(0)}92%,100%{transform:translateX(var(--dx))}}
 #obj{position:fixed;left:50%;transform:translateX(-50%);pointer-events:none;font-size:12px;color:#ffe066;background:rgba(0,0,0,.6);padding:3px 8px;border:2px solid #000;white-space:nowrap;max-width:96%;overflow:hidden;text-overflow:ellipsis}
 .btn{position:fixed;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.35),rgba(255,255,255,.08));border:3px solid rgba(255,255,255,.75);box-shadow:0 3px 0 rgba(0,0,0,.6),inset 0 0 0 2px rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:bold;text-align:center;touch-action:none;color:#fff;text-shadow:2px 2px 0 #000;line-height:1.05}
 .btn.on{background:radial-gradient(circle,rgba(255,220,80,.6),rgba(255,150,0,.25));transform:scale(.94)}
