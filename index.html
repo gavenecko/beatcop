@@ -1,295 +1,925 @@
-<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d1a"><meta name="mobile-web-app-capable" content="yes">
 <title>BEAT COP: Donut Justice</title>
 <style>
-html,body{margin:0;height:100%;background:#111;overflow:hidden;touch-action:none;font-family:monospace;color:#fff;-webkit-user-select:none;user-select:none}
-canvas{position:fixed;left:0;top:0;image-rendering:pixelated}
-#hud{position:fixed;left:6px;top:6px;font-size:13px;line-height:16px;text-shadow:1px 1px #000;pointer-events:none}
-#bars div{height:6px;width:90px;background:#333;margin:2px 0}#bars i{display:block;height:100%}
-#radio{position:fixed;left:6px;right:120px;bottom:auto;top:84px;font-size:12px;color:#7f7;text-shadow:1px 1px #000;pointer-events:none}
-#obj{position:fixed;left:0;right:0;bottom:4px;text-align:center;font-size:12px;color:#ff6;text-shadow:1px 1px #000;pointer-events:none}
-.btn{position:fixed;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:bold;font-size:13px;text-align:center}
-#pauseB{position:fixed;right:110px;top:6px;padding:4px 8px;background:rgba(0,0,0,.5);border:1px solid #fff}
-#modal{position:fixed;inset:0;background:rgba(0,0,20,.85);display:none;align-items:center;justify-content:center;z-index:9}
-#box{background:#223;border:3px solid #fc3;padding:12px;max-width:520px;width:92%;max-height:90%;overflow:auto;font-size:14px}
-#box h2{margin:0 0 6px;color:#fc3;font-size:17px}#box button{display:block;width:100%;margin:5px 0;padding:9px;font:14px monospace;background:#335;color:#fff;border:2px solid #88a;border-radius:4px}
-#box button:active{background:#557}.meter{height:10px;background:#333;margin:3px 0}.meter i{display:block;height:100%}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#0b0d1a;overflow:hidden;touch-action:none;overscroll-behavior:none;font-family:"Courier New",monospace;color:#fff;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+canvas#c{position:fixed;left:0;top:0;width:100%;height:100%;image-rendering:pixelated;touch-action:none}
+.px{font-weight:bold;text-transform:uppercase;letter-spacing:1px;text-shadow:2px 2px 0 #000}
+#hud{position:fixed;left:6px;top:6px;pointer-events:none;font-size:12px;line-height:15px}
+#hud .row{background:rgba(8,10,25,.72);border:2px solid #000;box-shadow:inset 0 0 0 1px #445;padding:3px 6px;margin-bottom:3px;display:inline-block}
+.bar{height:7px;width:110px;background:#222;border:1px solid #000;margin:2px 0;position:relative}.bar i{display:block;height:100%}
+.bar b{position:absolute;left:-14px;top:-4px;font-size:9px}
+#radio{position:fixed;left:6px;pointer-events:none;font-size:11px;line-height:13px;max-width:62%}
+#radio div{background:rgba(0,20,0,.7);border-left:3px solid #4f4;padding:2px 5px;margin-top:2px}
+#obj{position:fixed;left:50%;transform:translateX(-50%);pointer-events:none;font-size:12px;color:#ffe066;background:rgba(0,0,0,.6);padding:3px 8px;border:2px solid #000;white-space:nowrap;max-width:96%;overflow:hidden;text-overflow:ellipsis}
+.btn{position:fixed;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.35),rgba(255,255,255,.08));border:3px solid rgba(255,255,255,.75);box-shadow:0 3px 0 rgba(0,0,0,.6),inset 0 0 0 2px rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:bold;text-align:center;touch-action:none;color:#fff;text-shadow:2px 2px 0 #000;line-height:1.05}
+.btn.on{background:radial-gradient(circle,rgba(255,220,80,.6),rgba(255,150,0,.25));transform:scale(.94)}
+.btn small{font-size:.62em;letter-spacing:0}
+#bA{border-color:#7f7}#bB{border-color:#7cf}#bS{border-color:#fc6}#bH{border-color:#f66}
+.tb{position:fixed;top:6px;width:38px;height:38px;background:rgba(8,10,25,.8);border:2px solid #889;display:flex;align-items:center;justify-content:center;font-size:17px;touch-action:none}
+#modal{position:fixed;inset:0;display:none;z-index:9;align-items:flex-end;justify-content:center;background:linear-gradient(transparent 35%,rgba(0,0,0,.55))}
+#modal.full{align-items:center;background:rgba(5,6,20,.82)}
+#box{background:#1a1d33;border:4px solid #000;box-shadow:inset 0 0 0 3px #fc3,0 6px 0 rgba(0,0,0,.5);padding:12px 14px;max-width:560px;width:96%;max-height:72%;overflow:auto;font-size:14px;margin-bottom:8px;touch-action:pan-y}
+#modal.full #box{max-height:90%;margin:0}
+#box h2{margin:0 0 6px;color:#fc3;font-size:16px;text-transform:uppercase;text-shadow:2px 2px 0 #000;letter-spacing:1px}
+#box .who{color:#7cf;font-weight:bold;text-transform:uppercase}
+#box button{display:block;width:100%;margin:6px 0;padding:10px;font:bold 14px "Courier New",monospace;background:#2c3263;color:#fff;border:3px solid #000;box-shadow:inset 0 0 0 2px #6a74c9,0 3px 0 #000;text-align:left;touch-action:manipulation}
+#box button:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px #9aa4f9}
+#box button.dim{opacity:.45}
+.meter{height:10px;background:#111;border:1px solid #000;margin:3px 0}.meter i{display:block;height:100%}
+.board{background:#8a5a2b;border:6px solid #4a2d10;padding:8px;display:flex;flex-wrap:wrap;gap:6px}
+.note{background:#fff7a8;color:#222;padding:5px;font-size:12px;transform:rotate(-1deg);box-shadow:2px 2px 0 rgba(0,0,0,.4);flex:1 1 45%}
+.sus{background:#eee;color:#111;padding:4px;font-size:11px;width:calc(50% - 4px);text-align:center;box-shadow:2px 2px 0 rgba(0,0,0,.4)}
+.sus.out{opacity:.35;text-decoration:line-through}.sus img{width:48px;height:64px;image-rendering:pixelated;background:#9ab}
+.sus button{padding:5px!important;text-align:center!important;font-size:12px!important}
+#title{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6vh;pointer-events:none}
+#title .menu{pointer-events:auto;width:min(340px,86vw)}
+#title button{display:block;width:100%;margin:7px 0;padding:12px;font:bold 17px "Courier New",monospace;background:#2c3263;color:#fff;border:3px solid #000;box-shadow:inset 0 0 0 2px #6a74c9,0 4px 0 #000;text-transform:uppercase;letter-spacing:1px}
+#title button.go{background:#1d6b2f;box-shadow:inset 0 0 0 2px #6f6,0 4px 0 #000}
+#title .career{font-size:12px;text-align:center;background:rgba(0,0,0,.6);padding:6px;border:2px solid #000;margin-bottom:6px}
+#toast{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);font-size:22px;color:#fc3;pointer-events:none;text-align:center;opacity:0;transition:opacity .3s;z-index:7}
+#ver{position:fixed;right:4px;bottom:2px;font-size:9px;opacity:.5;pointer-events:none;z-index:9}
 </style></head><body>
 <canvas id="c"></canvas>
-<div id="obj"></div>
-<div id="hud"><span id="clock"></span> | Score <span id="score">0</span> | Rep <span id="rep">50</span><br><span id="status"></span><div id="bars"><div><i id="hpb" style="background:#e33"></i></div><div><i id="stb" style="background:#3be"></i></div></div></div>
-<div id="radio"></div>
-<div id="pauseB">II</div>
+<div id="hud" class="px"><div class="row"><span id="clock"></span> <span id="score"></span> <span id="rank"></span></div><br>
+<div class="row" style="padding:3px 6px 3px 18px"><div class="bar"><b>HP</b><i id="hpb" style="background:linear-gradient(#f66,#b22)"></i></div><div class="bar"><b>ST</b><i id="stb" style="background:linear-gradient(#6cf,#27a)"></i></div><div class="bar"><b>RP</b><i id="rpb" style="background:linear-gradient(#fd6,#c80)"></i></div></div><br>
+<div class="row" id="status" style="font-size:11px"></div></div>
+<div id="radio" class="px"></div>
+<div id="obj" class="px"></div>
+<div id="toast" class="px"></div>
 <div id="modal"><div id="box"></div></div>
+<div id="title"><div class="menu"><div class="career px" id="career"></div>
+<button class="go" id="tStart">▶ Start Shift</button><button id="tHelp">? How to play</button><button id="tSnd">♪ Sound: on</button></div></div>
+<div id="ver"></div>
 <script>
 "use strict";
+const VERSION='2.0.0';
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
-const T=16,P=12,N=72; // tile size, block period, map tiles
-let W,H,Z;
-function resize(){W=innerWidth;H=innerHeight;cv.width=W;cv.height=H;Z=Math.max(2,Math.round(Math.min(W,H)/200));layoutButtons();}
-// ---------- RNG / utils
+const T=16,P=12,N=75,BN=6,TAU=Math.PI*2;
+let W=1,H=1,DPR=1,Z=3;
 const R=Math.random,rnd=(a,b)=>a+R()*(b-a),ri=(a,b)=>Math.floor(rnd(a,b+1)),pick=a=>a[Math.floor(R()*a.length)];
-const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),clamp=(v,a,b)=>v<a?a:v>b?b:v;
-// ---------- MAP: 0 road,1 sidewalk,2 building,3 park,4 crosswalk
-const map=new Uint8Array(N*N),bcol=[];
-const isRoadC=v=>(v%P)<3;
-for(let y=0;y<N;y++)for(let x=0;x<N;x++){let t;
- const rx=isRoadC(x),ry=isRoadC(y);
- if(rx||ry)t=0;else if(x%P==3||x%P==P-1||y%P==3||y%P==P-1)t=1;else t=2;
- if(x<1||y<1||x>=N-1||y>=N-1)t=2;
- map[y*N+x]=t;}
-const blocks={};const BN=Math.floor(N/P);
-for(let by=0;by<BN;by++)for(let bx=0;bx<BN;bx++)blocks[bx+','+by]={col:pick(['#a65','#865','#669','#777','#596','#a87','#957']),name:pick(['Apartments','Pawn Shop','Laundromat','Pizza Place','Bank','Bodega','Arcade','Tax Office','Gym','Bookstore'])};
-if(1){const park=blocks['4,1'];park.name='Park';for(let y=1*P+4;y<1*P+P-1;y++)for(let x=4*P+4;x<4*P+P-1;x++)map[y*N+x]=3;}
-blocks['1,1'].name='POLICE';blocks['1,1'].col='#349';
-blocks['3,3'].name='DONUTS';blocks['3,3'].col='#e8a';
-blocks['4,4'].name='Bank';blocks['4,4'].col='#bb8';
-const tile=(x,y)=>(x<0||y<0||x>=N||y>=N)?2:map[(y|0)*N+(x|0)];
-const solidAt=(px,py)=>{const t=tile(px/T,py/T);return t==2};
-function blockCenter(bx,by){return{x:(bx*P+7.5)*T,y:(by*P+7.5)*T}}
-function doorOf(bx,by){return{x:(bx*P+7.5)*T,y:(by*P+P-1+.5)*T}} // south sidewalk
-const STATION=doorOf(1,1),DONUT=doorOf(3,3);
-// ---------- state
-const S={time:8*60,score:0,rep:50,hp:100,st:100,paused:false,modal:false,arrests:0,donuts:0,over:false,msgs:[],shake:0};
-const me={x:STATION.x,y:STATION.y+T*2,dir:0,anim:0,inCar:false,carry:null,tackle:0};
-const patrol={x:STATION.x+T*3,y:STATION.y+T*2.5,a:0,v:0,siren:false,police:true,col:'#fff'};
-let peds=[],cars=[],crimes=[],parts=[],floaters=[];
-const FIRST=['Vinnie','Barb','Dusty','Gus','Marge','Skeeter','Tony','Lulu','Clem','Rex','Dolores','Chad','Brenda','Moose','Earl'];
-const LAST=['Pastrami','McGillicuddy','Bonkowski','Fettucini','Schlotz','Wigglesworth','Dingle','Kowalczyk','Pfeiffer','Throckmorton'];
-const CRIMES={shoplift:{n:'Shoplifting',code:'10-SL',pts:100,flee:1},jaywalk:{n:'Jaywalking',code:'10-JW',pts:40,flee:0.4},vandal:{n:'Vandalism',code:'10-VD',pts:80,flee:0.8},mug:{n:'Mugging',code:'10-MG',pts:150,flee:1,hit:1},gta:{n:'Grand Theft Auto',code:'10-GTA',pts:250,car:1}};
-function randWalkTile(type){for(let i=0;i<500;i++){const x=ri(1,N-2),y=ri(1,N-2);if(map[y*N+x]==type)return{x:(x+.5)*T,y:(y+.5)*T}}return{x:T*4,y:T*4}}
-function mkPed(){const p=randWalkTile(1);return{x:p.x,y:p.y,dx:0,dy:0,t:0,name:pick(FIRST)+' '+pick(LAST),shirt:pick(['#c33','#3c3','#cc3','#c6c','#3cc','#fa3','#eee','#555']),skin:pick(['#fdb','#c96','#863','#fca']),hair:pick(['#222','#a62','#ee8','#888','#d33']),crime:null,state:'walk',cuffed:false,spd:rnd(18,28)};}
-for(let i=0;i<45;i++)peds.push(mkPed());
-function roadPoint(){const lines=[];for(let k=0;k*P<N;k++)lines.push((k*P+1.5)*T);
- if(R()<.5)return{x:pick(lines),y:rnd(2,N-2)*T,a:pick([Math.PI/2,-Math.PI/2])};return{x:rnd(2,N-2)*T,y:pick(lines),a:pick([0,Math.PI])}}
-function mkCar(){const p=roadPoint();return{x:p.x,y:p.y,a:p.a,v:rnd(35,55),col:pick(['#d33','#36d','#ec3','#3a5','#eee','#a5c','#f80']),ai:true,lastI:-1,flee:false,stopped:0}}
-for(let i=0;i<16;i++)cars.push(mkCar());
-// ---------- detective case
-const CASE={active:true,found:0,solved:false,clues:[],suspects:[],culprit:null};
-(function(){const names=['Big Sal Fettucini','"Sprinkles" McGee','Prof. Cruller'];CASE.suspects=names;CASE.culprit=1;
- const spots=[[0,4,'A trail of pink frosting... leads AWAY from the Bank. Someone with a sweet tooth.'],[5,2,'A receipt: "1x Ski mask (sprinkle pattern)". Paid in rolled pennies.'],[2,5,'Witness parrot says: "SQUAWK! TALL ONE! NOT A PROFESSOR! SQUAWK!"']];
- for(const s of spots){const d=doorOf(s[0],s[1]);CASE.clues.push({x:d.x+T*2,y:d.y,text:s[2],got:false})}})();
-// ---------- radio
-function radio(t,c){S.msgs.unshift({t,c:c||'#7f7',life:9});if(S.msgs.length>4)S.msgs.pop();}
-function floatTxt(x,y,t,c){floaters.push({x,y,t,c:c||'#ff0',life:1.6})}
-// ---------- crimes
-function spawnCrime(){const types=['shoplift','jaywalk','vandal','mug','shoplift','jaywalk','gta'];const ty=pick(types);
- if(ty=='gta'){const c=pick(cars.filter(c=>c.ai&&!c.flee&&dist(c,me)<T*40&&dist(c,me)>T*8));if(!c)return;c.flee=true;c.v=95;c.crime='gta';c.thief=mkPed();c.thief.crime='gta';radio('DISPATCH: 10-GTA! Stolen '+colName(c.col)+' sedan, all units! Ram it to stop it.','#f88');crimes.push({t:'gta',car:c});return;}
- const cand=peds.filter(p=>!p.crime&&!p.cuffed&&dist(p,me)<T*35);if(!cand.length)return;const p=pick(cand);p.crime=ty;p.state='crime';p.ct=0;
- const where=blockOf(p);radio('DISPATCH: '+CRIMES[ty].code+' '+CRIMES[ty].n+' near the '+where+'. Suspect: '+p.name.split(' ')[0]+', '+colName(p.shirt)+' shirt.','#ff8');
- if(ty=='jaywalk'){const r=nearestRoad(p);if(r){p.tx=r.x;p.ty=r.y}}crimes.push({t:ty,ped:p});}
-function colName(c){return({'#c33':'red','#3c3':'green','#cc3':'yellow','#c6c':'purple','#3cc':'teal','#fa3':'orange','#eee':'white','#555':'grey','#d33':'red','#36d':'blue','#ec3':'yellow','#3a5':'green','#a5c':'purple','#f80':'orange'})[c]||'ugly'}
-function blockOf(p){const bx=Math.floor(p.x/T/P),by=Math.floor(p.y/T/P);const b=blocks[bx+','+by];return b?b.name:'outskirts'}
-function nearestRoad(p){const tx=p.x/T|0,ty=p.y/T|0;for(let r=1;r<6;r++)for(const[dx,dy]of[[r,0],[-r,0],[0,r],[0,-r]])if(tile(tx+dx,ty+dy)==0)return{x:(tx+dx*2+.5)*T,y:(ty+dy*2+.5)*T};return null}
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const angDiff=(a,b)=>{let d=b-a;while(d>Math.PI)d-=TAU;while(d<-Math.PI)d+=TAU;return d};
+const $=id=>document.getElementById(id);
+function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=false;return[c,g]}
+// ---------- 3x5 pixel font
+const FONT={};(function(){const d={A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',Z:'111001010100111','0':'111101101101111','1':'010110010010111','2':'110001010100111','3':'110001010001110','4':'101101111001001','5':'111100110001110','6':'011100111101111','7':'111001010010010','8':'111101111101111','9':'111101111001110','!':'010010010000010','?':'110001010000010','.':'000000000000010',',':'000000000010100',"'":'010010000000000','"':'101101000000000','-':'000000111000000','+':'000010111010000',':':'000010000010000','/':'001001010100100','$':'011110010011110','*':'101010101000000','(':'010100100100010',')':'010001001001010','#':'101111101111101','%':'101001010100101','&':'010101010101011',' ':'000000000000000','>':'100010001010100','<':'001010100010001','=':'000111000111000','_':'000000000000111'};for(const k in d)FONT[k]=d[k]})();
+const textCache=new Map();
+function textCanvas(s,col,shadow){const key=s+'|'+col+'|'+shadow;let c=textCache.get(key);if(c)return c;if(textCache.size>400)textCache.clear();
+ s=String(s).toUpperCase();const w=s.length*4+1,h=7;const[cc,g]=mkCanvas(w,h);
+ const draw=(ox,oy,cl)=>{g.fillStyle=cl;for(let i=0;i<s.length;i++){const gl=FONT[s[i]]||FONT['?'];for(let b=0;b<15;b++)if(gl[b]=='1')g.fillRect(ox+i*4+b%3,oy+(b/3|0),1,1)}};
+ if(shadow)draw(1,1,shadow);draw(0,0,col);textCache.set(key,cc);return cc}
+function ptext(g,s,x,y,col='#fff',sc=1,align='center',shadow='#000'){const c=textCanvas(s,col,shadow);const w=c.width*sc;const ox=align=='center'?x-w/2:align=='right'?x-w:x;g.drawImage(c,Math.round(ox),Math.round(y),w,c.height*sc)}
+// ---------- save
+const SAVE_KEY='beatcop_save_v2';
+let SAVE={career:0,shifts:0,best:0,cases:0,arrests:0,muted:false,music:true,vib:true,caseIdx:0};
+try{Object.assign(SAVE,JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'))}catch(e){}
+function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVE))}catch(e){}}
+const RANKS=[[0,'Cadet'],[800,'Patrol Officer'],[2500,'Senior Officer'],[5000,'Corporal'],[9000,'Sergeant'],[15000,'Detective'],[24000,'Lieutenant'],[36000,'Captain'],[55000,'Commissioner']];
+function rankOf(x){let r=RANKS[0][1];for(const k of RANKS)if(x>=k[0])r=k[1];return r}
+function nextRank(x){for(const k of RANKS)if(x<k[0])return k;return null}
+// ---------- haptics
+function vib(p){if(SAVE.vib&&navigator.vibrate)try{navigator.vibrate(p)}catch(e){}}
+// ---------- audio
+const AU={ctx:null,sfx:null,mus:null,master:null,nb:null,siren:null,step:0,next:0,intense:0};
+function audioInit(){if(AU.ctx){if(AU.ctx.state!='running')AU.ctx.resume();return}
+ const C=window.AudioContext||window.webkitAudioContext;if(!C)return;try{AU.ctx=new C()}catch(e){return}
+ const a=AU.ctx;AU.master=a.createGain();AU.master.gain.value=SAVE.muted?0:0.7;AU.master.connect(a.destination);
+ AU.sfx=a.createGain();AU.sfx.gain.value=0.8;AU.sfx.connect(AU.master);AU.mus=a.createGain();AU.mus.gain.value=SAVE.music?0.22:0;AU.mus.connect(AU.master);
+ const len=a.sampleRate;AU.nb=a.createBuffer(1,len,a.sampleRate);const d=AU.nb.getChannelData(0);for(let i=0;i<len;i++)d[i]=R()*2-1;
+ AU.next=a.currentTime+0.1;setInterval(musicTick,40)}
+function setMuted(m){SAVE.muted=m;persist();if(AU.master)AU.master.gain.setTargetAtTime(m?0:0.7,AU.ctx.currentTime,.05)}
+function tone(f,d,type='square',v=.15,f2=0,delay=0,dest){if(!AU.ctx)return;const a=AU.ctx,t=a.currentTime+delay;const o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
+ g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(v,t+0.005);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);g.connect(dest||AU.sfx);o.start(t);o.stop(t+d+.03)}
+function noise(d,v=.3,fc=1200,delay=0,ft='lowpass',dest){if(!AU.ctx)return;const a=AU.ctx,t=a.currentTime+delay;const s=a.createBufferSource();s.buffer=AU.nb;const f=a.createBiquadFilter();f.type=ft;f.frequency.value=fc;const g=a.createGain();
+ g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.0001,t+d);s.connect(f);f.connect(g);g.connect(dest||AU.sfx);s.start(t,R()*0.5);s.stop(t+d+.03)}
+const SFX={
+ tackle(){noise(.18,.6,500);tone(140,.18,'sine',.5,45)},
+ whiff(){noise(.12,.2,2500,0,'bandpass')},
+ cuff(){tone(2200,.04,'square',.12);tone(1600,.05,'square',.12,0,.06);tone(2600,.06,'square',.1,0,.13)},
+ donut(){[523,659,784,1046].forEach((f,i)=>tone(f,.09,'square',.12,0,i*.06))},
+ blip(){tone(1320,.04,'square',.07)},
+ select(){tone(880,.03,'square',.07)},
+ radio(){noise(.12,.15,1800,0,'bandpass');tone(1400,.05,'square',.06,0,.12);tone(1000,.05,'square',.06,0,.18)},
+ crash(){noise(.45,.7,350);tone(90,.3,'sawtooth',.25,40)},
+ stamp(){noise(.08,.6,300);tone(70,.12,'sine',.5,40)},
+ ticket(){tone(660,.05,'square',.1);tone(990,.08,'square',.1,0,.06)},
+ error(){tone(200,.25,'sawtooth',.15,90)},
+ success(){[392,523,659,784,1046].forEach((f,i)=>tone(f,.12,'square',.12,0,i*.07))},
+ fanfare(){[523,523,523,659,784,659,784,1046].forEach((f,i)=>tone(f,.14,'square',.13,0,i*.1))},
+ honk(){tone(380,.22,'square',.08);tone(470,.22,'square',.08)},
+ door(){tone(300,.08,'triangle',.2,500)},
+ step(){noise(.03,.05,800)},
+ hurt(){tone(300,.2,'square',.15,100);noise(.1,.3,800)},
+ type(){tone(1800+R()*400,.015,'square',.03)}};
+function sirenUpdate(on){if(!AU.ctx)return;const a=AU.ctx;
+ if(on&&!AU.siren){const o=a.createOscillator(),g=a.createGain(),f=a.createBiquadFilter();o.type='sawtooth';f.type='lowpass';f.frequency.value=2200;g.gain.value=0;o.connect(f);f.connect(g);g.connect(AU.sfx);o.start();AU.siren={o,g}}
+ if(AU.siren){const t=a.currentTime;AU.siren.g.gain.setTargetAtTime(on?0.07:0,t,.05);if(on){const ph=(t*0.9)%1;AU.siren.o.frequency.setTargetAtTime(ph<.5?650+ph*2*500:1150-(ph-.5)*2*500,t,.03)}}}
+// chiptune: Am - F - C - G with a cop-show groove
+const SONG={bass:[45,45,57,45,41,41,53,41,48,48,60,48,43,43,55,47],lead:[69,0,72,0,76,74,72,0,65,0,69,72,0,74,72,69,67,0,72,0,76,0,79,77,71,74,0,71,67,0,69,0]};
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function musicTick(){if(!AU.ctx||AU.ctx.state!='running')return;const a=AU.ctx;const bpm=AU.intense?150:112,s8=60/bpm/2;
+ if(AU.next<a.currentTime-1)AU.next=a.currentTime+.05;
+ while(AU.next<a.currentTime+0.25){const st=AU.step,t=AU.next-a.currentTime;const bar=(st>>3)%4;
+  const bn=SONG.bass[bar*4+((st>>1)&3)];if(st%2==0||AU.intense)tone(mtof(bn-12+(st%4==2?12:0)),s8*.9,'triangle',.5,0,t,AU.mus);
+  const ln=SONG.lead[st%32];if(ln&&(st%64<32||AU.intense))tone(mtof(ln),s8*.8,'square',.13,0,t,AU.mus);
+  if(st%4==2)noise(.04,.25,7000,t,'highpass',AU.mus);if(st%8==0)noise(.12,.5,180,t,'lowpass',AU.mus);if(AU.intense&&st%8==4)noise(.1,.35,1500,t,'bandpass',AU.mus);
+  AU.step++;AU.next+=s8}}
 // ---------- input
-const keys={};let joy={x:0,y:0,active:false,id:null,ox:0,oy:0},btnA=false,btnB=false,btnS=false,pressA=false,pressB=false;
-addEventListener('keydown',e=>{if(!keys[e.code]){if(e.code=='Space'||e.code=='KeyJ')pressA=true;if(e.code=='KeyE'||e.code=='KeyK')pressB=true;if(e.code=='KeyP'||e.code=='Escape')togglePause();if(e.code=='KeyH')S.siren=!S.siren}keys[e.code]=true;if(e.code.startsWith('Arrow')||e.code=='Space')e.preventDefault()});
-addEventListener('keyup',e=>keys[e.code]=false);
-const buttons=[];function mkBtn(label,on,off){const d=document.createElement('div');d.className='btn';d.innerHTML=label;document.body.appendChild(d);
- d.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();on()},{passive:false});d.addEventListener('touchend',e=>{e.preventDefault();off&&off()},{passive:false});
- d.addEventListener('mousedown',e=>{on()});d.addEventListener('mouseup',e=>{off&&off()});buttons.push(d);return d}
-const bA=mkBtn('A<br><small>ACT</small>',()=>{pressA=true;btnA=true},()=>btnA=false);
-const bB=mkBtn('B<br><small>CAR</small>',()=>{pressB=true},null);
-const bS=mkBtn('RUN',()=>btnS=true,()=>btnS=false);
-const bH=mkBtn('🚨',()=>{S.siren=!S.siren},null);
-function layoutButtons(){const s=Math.max(56,Math.min(W,H)*0.16);const set=(d,r,b,k)=>{d.style.width=d.style.height=(s*k)+'px';d.style.right=r+'px';d.style.bottom=b+'px'};
- if(!buttons.length)return;set(bA,16,s*0.9,1.1);set(bB,s*1.35,16,1);set(bS,s*1.35+s*1.05,s*0.2,0.8);set(bH,16,s*2.2,0.7);}
-document.getElementById('pauseB').addEventListener('click',togglePause);document.getElementById('pauseB').addEventListener('touchstart',e=>{e.preventDefault();togglePause()});
-cv.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){if(joy.id===null&&t.clientX<W*0.55){joy.id=t.identifier;joy.ox=t.clientX;joy.oy=t.clientY;joy.active=true;joy.x=joy.y=0}}},{passive:false});
-cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===joy.id){let dx=t.clientX-joy.ox,dy=t.clientY-joy.oy,m=Math.hypot(dx,dy),mx=50;if(m>mx){dx*=mx/m;dy*=mx/m}joy.x=dx/mx;joy.y=dy/mx}},{passive:false});
-const jend=e=>{for(const t of e.changedTouches)if(t.identifier===joy.id){joy.id=null;joy.active=false;joy.x=joy.y=0}};cv.addEventListener('touchend',jend);cv.addEventListener('touchcancel',jend);
-function inputVec(){let x=joy.x,y=joy.y;if(keys.KeyA||keys.ArrowLeft)x-=1;if(keys.KeyD||keys.ArrowRight)x+=1;if(keys.KeyW||keys.ArrowUp)y-=1;if(keys.KeyS||keys.ArrowDown)y+=1;const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}return{x,y,m:Math.min(1,m)}}
-// ---------- modal
-const modal=document.getElementById('modal'),box=document.getElementById('box');
-function showModal(html,btns){S.modal=true;modal.style.display='flex';box.innerHTML=html;for(const b of btns||[]){const e=document.createElement('button');e.innerHTML=b[0];e.onclick=()=>b[1]();box.appendChild(e)}}
-function closeModal(){S.modal=false;modal.style.display='none'}
-function togglePause(){if(S.modal&&!S.paused)return;S.paused=!S.paused;if(S.paused)showModal(`<h2>⏸ PAUSED — BEAT COP</h2>
-<b>Goal:</b> Survive your shift (08:00–16:00). Arrest perps, book them at the 🚓 POLICE station, do the paperwork, eat donuts, solve the Great Donut Heist.<br><br>
-<b>Touch:</b> left side = joystick · <b>A</b> act (tackle / cuff / buy donut / pick up clue / book) · <b>B</b> enter/exit car · <b>RUN</b> sprint (hold) · 🚨 siren<br>
-<b>Keys:</b> WASD/Arrows move · Space/J act · E/K car · Shift sprint · H siren · P/Esc pause<br><br>
-<b>Tips:</b> Red <b>!</b> = crime in progress. Chase, press A close by to tackle, A again to cuff. Cuffed perps follow you — walk or drive to the station door. Ram stolen cars with your cruiser until they stop. Yellow <b>?</b> = case clue. Pink dot on minimap = DONUTS. Running drains stamina; donuts fix everything.<br><br>
-Case: ${CASE.solved?'SOLVED':CASE.found+'/3 clues'} · Arrests: ${S.arrests} · Donuts: ${S.donuts}`,[['▶ Resume',()=>{S.paused=false;closeModal()}],['🔄 Restart shift',()=>location.reload()]]);else closeModal()}
+const keys={};const IN={pressA:false,pressB:false,run:false,joy:{id:null,ox:0,oy:0,x:0,y:0,rx:0,ry:0,R:60}};
+function inputVec(){let x=IN.joy.x,y=IN.joy.y;if(keys.KeyA||keys.ArrowLeft)x-=1;if(keys.KeyD||keys.ArrowRight)x+=1;if(keys.KeyW||keys.ArrowUp)y-=1;if(keys.KeyS||keys.ArrowDown)y+=1;const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}return{x,y,m:Math.min(1,m)}}
+function smoothJoy(dt){const j=IN.joy;let x=j.rx,y=j.ry;const m=Math.hypot(x,y),dz=0.15;let k=0;if(m>dz)k=Math.min(1,(m-dz)/(1-dz))/m;const tx=x*k,ty=y*k;const f=1-Math.exp(-dt*22);j.x+=(tx-j.x)*f;j.y+=(ty-j.y)*f;if(j.id===null&&Math.abs(j.x)<.01&&Math.abs(j.y)<.01){j.x=j.y=0}}
+
+// ---------- MAP  0 road,1 sidewalk,2 building,3 grass,4 path,5 water
+const PP=P*T;
+const map=new Uint8Array(N*N);
+const tile=(x,y)=>(x<0||y<0||x>=N||y>=N)?2:map[(y|0)*N+(x|0)];
+for(let y=0;y<N;y++)for(let x=0;x<N;x++){const rx=x%P<3,ry=y%P<3;let t;if(rx||ry)t=0;else if(x%P==3||x%P==P-1||y%P==3||y%P==P-1)t=1;else t=2;map[y*N+x]=t}
+const SPECIAL={'1,1':{type:'police',name:'POLICE',roof:'#3d4f8f',wall:'#27325e'},'3,3':{type:'donut',name:'DONUTS',roof:'#e88ab8',wall:'#a8507a'},'4,4':{type:'bank',name:'BANK',roof:'#c9c09a',wall:'#8a8060'},
+ '2,4':{type:'jewel',name:'GLITTER&SONS',roof:'#7a5ca8',wall:'#4a3570'},'5,2':{type:'apart',name:'APARTMENTS',roof:'#9a6a4a',wall:'#5e3e2a'},'0,3':{type:'pawn',name:'PAWN SHOP',roof:'#6a7a5a',wall:'#45503a'},'4,1':{type:'park',name:'PARK'},'1,4':{type:'park2',name:'PLAZA'}};
+const GENERIC=['LAUNDRY','PIZZA','ARCADE','TAXES','GYM','BOOKS','BODEGA','TATTOO','DINER','VIDEO','HAIR','KARATE','PETS','CLINIC','HOTEL','RECORDS','DELI','CAFE','BAR','THRIFT','GAMES','NAILS'];
+const ROOFS=['#8a5a4a','#6e6e78','#5a6e8a','#8a7a5a','#5a7a6a','#9a8a7a','#7a5a7a','#6a5a4a','#4e5a6a','#a07050'];
+const blocks={};{const gn=shuffle(GENERIC.slice());let gi=0;for(let by=0;by<BN;by++)for(let bx=0;bx<BN;bx++){const k=bx+','+by;const sp=SPECIAL[k];
+ blocks[k]=sp?Object.assign({bx,by},sp):{bx,by,type:'shop',name:gn[gi++%gn.length],roof:pick(ROOFS),wall:null,split:R()<.55}}}
+for(const k in blocks){const b=blocks[k];if(b.type=='park'||b.type=='park2'){for(let y=b.by*P+4;y<b.by*P+11;y++)for(let x=b.bx*P+4;x<b.bx*P+11;x++){const lx=x-b.bx*P,ly=y-b.by*P;let t=3;if(lx==7||ly==7)t=4;if(b.type=='park'&&lx>=8&&ly<=5&&lx<=9&&ly>=4)t=5;if(b.type=='park2')t=(lx==4||lx==10||ly==4||ly==10)?3:4;map[y*N+x]=t}}}
+function doorOf(bx,by){return{x:(bx*P+7.5)*T,y:(by*P+11.5)*T-4}}
+const blockAt=(x,y)=>blocks[Math.floor(x/PP)+','+Math.floor(y/PP)];
+function findBlock(type){for(const k in blocks)if(blocks[k].type==type)return blocks[k]}
+const STATION=doorOf(1,1),DONUT=doorOf(3,3);
+const solidCity=(px,py)=>{const t=tile(px/T,py/T);return t==2||t==5};
+const walkPed=t=>t==1||t==3||t==4;
+const isCross=(tx,ty)=>tile(tx,ty)==0&&((tx%P<3&&(ty%P==3||ty%P==P-1))||(ty%P<3&&(tx%P==3||tx%P==P-1)));
+// ---------- traffic lights (cycle 14s, green wave offsets)
+const LCYC=14;let simT=0;
+function light(kx,ky){const t=(simT+((kx*2.3+ky*3.7)%LCYC))%LCYC;return t<5.5?{ew:'g',ns:'r'}:t<7?{ew:'y',ns:'r'}:t<12.5?{ew:'r',ns:'g'}:{ew:'r',ns:'y'}}
+// ---------- prerendered city
+const LAMPS=[],PROPS=[];let CITY,WIN;
+function noiseFill(g,x,y,w,h,base,cols,n){g.fillStyle=base;g.fillRect(x,y,w,h);for(let i=0;i<n;i++){g.fillStyle=pick(cols);g.fillRect(x+ri(0,w-1),y+ri(0,h-1),1,1)}}
+function buildCity(){const[c,g]=mkCanvas(N*T,N*T);const[wc,wg]=mkCanvas(N*T,N*T);CITY=c;WIN=wc;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){const t=map[y*N+x],X=x*T,Y=y*T;
+  if(t==0){noiseFill(g,X,Y,T,T,'#3b3d46',['#34363e','#43454f','#30323a'],10);}
+  else if(t==1){g.fillStyle='#a8a8b2';g.fillRect(X,Y,T,T);g.fillStyle='#9898a3';g.fillRect(X,Y+7,T,1);g.fillRect(X+((y%2)?3:11),Y,1,7);g.fillRect(X+((y%2)?11:3),Y+8,1,8);
+   if(R()<.15){g.fillStyle='#9e9ea8';g.fillRect(X+ri(1,12),Y+ri(1,12),2,1)}
+   const curb=(dx,dy,rx,ry,rw,rh)=>{if(tile(x+dx,y+dy)==0){g.fillStyle='#d0d0d8';g.fillRect(X+rx,Y+ry,rw,rh)}};curb(-1,0,0,0,2,T);curb(1,0,T-2,0,2,T);curb(0,-1,0,0,T,2);curb(0,1,0,T-2,T,2)}
+  else if(t==3){noiseFill(g,X,Y,T,T,'#4c9a3c',['#58aa46','#428a34','#62b450','#3e8030'],18)}
+  else if(t==4){noiseFill(g,X,Y,T,T,'#c9b48a',['#bfa87c','#d4c098'],8)}
+  else if(t==5){g.fillStyle='#3a7ac8';g.fillRect(X,Y,T,T);g.fillStyle='#6aa8e8';g.fillRect(X+ri(2,10),Y+ri(2,12),4,1)}}
+ // road markings
+ for(let k=0;k<=6;k++){const o=k*PP;
+  for(let y=0;y<N*T;y+=PP)for(let s=48;s<PP-0;s+=1){} 
+  for(let y=0;y<N*T;y++){const m=y%PP;if(m>=48+16&&m<PP-16){g.fillStyle='#e8c440';g.fillRect(o+22,y,1,1);g.fillRect(o+25,y,1,1)}}
+  for(let x=0;x<N*T;x++){const m=x%PP;if(m>=48+16&&m<PP-16){g.fillStyle='#e8c440';g.fillRect(x,o+22,1,1);g.fillRect(x,o+25,1,1)}}}
+ for(let ky=0;ky<=6;ky++)for(let kx=0;kx<=6;kx++){const ix=kx*PP,iy=ky*PP;g.fillStyle='#e6e6ea';
+  const zebraV=(yy)=>{if(yy<0||yy>=N*T)return;for(let i=2;i<48;i+=5)g.fillRect(ix+i,yy+2,3,12)};const zebraH=(xx)=>{if(xx<0||xx>=N*T)return;for(let i=2;i<48;i+=5)g.fillRect(xx+2,iy+i,12,3)};
+  zebraV(iy-16);zebraV(iy+48);zebraH(ix-16);zebraH(ix+48);
+  if(iy-16>0)g.fillRect(ix+1,iy-18,23,2);if(iy+64<N*T)g.fillRect(ix+24,iy+64,23,2);if(ix-16>0)g.fillRect(ix-18,iy+24,2,23);if(ix+64<N*T)g.fillRect(ix+64,iy+1,2,23);
+  g.fillStyle='#2e3038';for(let i=0;i<3;i++){const mx=ix+ri(6,40),my=iy+ri(6,40);g.fillRect(mx,my,4,4)}}
+ // manholes & cracks
+ for(let i=0;i<120;i++){const x=ri(0,N-1),y=ri(0,N-1);if(tile(x,y)!=0)continue;const X=x*T+ri(2,12),Y=y*T+ri(2,12);if(R()<.4){g.fillStyle='#2a2c33';g.fillRect(X,Y,5,5);g.fillStyle='#4a4c55';g.fillRect(X+1,Y+1,3,3)}else{g.fillStyle='#2c2e35';for(let j=0;j<5;j++)g.fillRect(X+j,Y+(j%2),1,1)}}
+ // buildings
+ for(const k in blocks){const b=blocks[k];if(b.type=='park'||b.type=='park2'){drawPark(g,b);continue}
+  const x0=(b.bx*P+4)*T,y0=(b.by*P+4)*T;if(b.split){drawBuilding(g,wg,x0,y0,3*T,7*T,{roof:pick(ROOFS),name:pick(GENERIC)});drawBuilding(g,wg,x0+3*T,y0,4*T,7*T,b)}else drawBuilding(g,wg,x0,y0,7*T,7*T,b)}
+ // street furniture
+ for(let by=0;by<BN;by++)for(let bx=0;bx<BN;bx++){const sx=bx*PP,sy=by*PP;
+  for(const[lx,ly]of[[3,3],[11,3],[3,11],[11,11],[7,3],[3,7],[11,7]]){const X=(sx/T+lx+.5)*T,Y=(sy/T+ly+.5)*T;LAMPS.push({x:X+(lx==3?-5:lx==11?5:0),y:Y+(ly==3?-5:ly==11?5:0)})}
+  const spots=[];for(let i=4;i<=10;i++){spots.push([i,3],[3,i],[11,i])}shuffle(spots);
+  for(let i=0;i<6;i++){const[lx,ly]=spots[i];if(lx==7&&ly==11)continue;const X=(bx*P+lx)*T,Y=(by*P+ly)*T;const kind=pick(['tree','tree','hydrant','bench','trash','mail','paper']);drawProp(g,kind,X,Y,lx,ly)}}
+ for(const l of LAMPS){g.fillStyle='rgba(0,0,0,.3)';g.fillRect(l.x-1,l.y+1,4,3);g.fillStyle='#2a2a30';g.fillRect(l.x-2,l.y-2,4,4);g.fillStyle='#ffe9a0';g.fillRect(l.x-1,l.y-1,2,2)}}
+function drawProp(g,kind,X,Y,lx,ly){const cx=X+8,cy=Y+8;
+ if(kind=='tree'){g.fillStyle='#6a5030';g.fillRect(cx-4,cy-4,8,8);g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.arc(cx+2,cy+3,7,0,TAU);g.fill();g.fillStyle='#2f7a2a';g.beginPath();g.arc(cx,cy,7,0,TAU);g.fill();g.fillStyle='#46a03a';g.beginPath();g.arc(cx-2,cy-2,4,0,TAU);g.fill();g.fillStyle='#6cc050';g.fillRect(cx-3,cy-4,2,2)}
+ else if(kind=='hydrant'){g.fillStyle='#b01818';g.fillRect(cx-2,cy-2,5,5);g.fillStyle='#f03a3a';g.fillRect(cx-1,cy-1,3,3);g.fillStyle='#ddd';g.fillRect(cx,cy,1,1)}
+ else if(kind=='bench'){const v=lx==3||lx==11;g.fillStyle='#6a4426';if(v)g.fillRect(cx-2,cy-6,5,12);else g.fillRect(cx-6,cy-2,12,5);g.fillStyle='#8a5a32';if(v)g.fillRect(cx-1,cy-6,1,12);else g.fillRect(cx-6,cy-1,12,1)}
+ else if(kind=='trash'){g.fillStyle='#3a5a3a';g.fillRect(cx-3,cy-3,6,6);g.fillStyle='#5a7a5a';g.fillRect(cx-2,cy-2,4,1);g.fillStyle='#111';g.fillRect(cx-2,cy,4,1)}
+ else if(kind=='mail'){g.fillStyle='#2848a8';g.fillRect(cx-3,cy-3,6,6);g.fillStyle='#4a6ad8';g.fillRect(cx-3,cy-3,6,2)}
+ else{g.fillStyle='#c8a020';g.fillRect(cx-3,cy-3,6,6);g.fillStyle='#fff';g.fillRect(cx-2,cy-1,4,2)}}
+function shade(hex,f){const n=parseInt(hex.slice(1),16);let r=n>>16,gg=(n>>8)&255,b=n&255;r=clamp(r*f|0,0,255);gg=clamp(gg*f|0,0,255);b=clamp(b*f|0,0,255);return'#'+((1<<24)|(r<<16)|(gg<<8)|b).toString(16).slice(1)}
+function drawBuilding(g,wg,x0,y0,w,h,b){const roof=b.roof,wall=b.wall||shade(roof,.6),rh=h-T;
+ // shadow
+ g.fillStyle='rgba(0,0,0,.28)';g.fillRect(x0+w,y0+4,4,h);
+ noiseFill(g,x0,y0,w,rh,roof,[shade(roof,.92),shade(roof,1.08)],w*rh/14|0);
+ g.fillStyle=shade(roof,1.25);g.fillRect(x0,y0,w,2);g.fillRect(x0,y0,2,rh);g.fillStyle=shade(roof,.75);g.fillRect(x0+w-2,y0,2,rh);g.fillRect(x0,y0+rh-2,w,2);
+ // rooftop items
+ const items=b.type=='police'?['heli','ac','ac']:b.type=='donut'?['bigdonut']:b.type=='bank'?['vault','ac']:[pick(['ac','vent','tower','sky','dish']),pick(['ac','vent','sky']),'ac'];
+ let ix=x0+8;for(const it of items){const iy=y0+ri(8,rh-26);
+  if(it=='ac'){g.fillStyle='#8a8a92';g.fillRect(ix,iy,12,10);g.fillStyle='#5a5a62';g.fillRect(ix+2,iy+2,8,6);g.fillStyle='#aaa';g.fillRect(ix+3,iy+4,6,1);ix+=18}
+  else if(it=='vent'){g.fillStyle='#707078';g.fillRect(ix,iy,6,6);g.fillStyle='#333';g.fillRect(ix+1,iy+1,4,4);ix+=12}
+  else if(it=='tower'){g.fillStyle='#6a4a2a';g.beginPath();g.arc(ix+8,iy+8,8,0,TAU);g.fill();g.fillStyle='#8a6a3a';g.beginPath();g.arc(ix+8,iy+8,5,0,TAU);g.fill();ix+=22}
+  else if(it=='sky'){g.fillStyle='#9ad0e8';g.fillRect(ix,iy,14,8);g.fillStyle='#d0f0ff';g.fillRect(ix+1,iy+1,5,2);ix+=20}
+  else if(it=='dish'){g.fillStyle='#ddd';g.beginPath();g.arc(ix+5,iy+5,5,0,TAU);g.fill();g.fillStyle='#999';g.fillRect(ix+4,iy+4,2,2);ix+=14}
+  else if(it=='heli'){const cx=x0+w/2,cy=y0+rh/2-4;g.fillStyle='#333';g.beginPath();g.arc(cx,cy,22,0,TAU);g.fill();g.fillStyle='#ee4';g.beginPath();g.arc(cx,cy,20,0,TAU);g.fill();g.fillStyle='#333';g.beginPath();g.arc(cx,cy,18,0,TAU);g.fill();ptext(g,'H',cx,cy-10,'#fff',4,'center',null);ix=x0+w-24}
+  else if(it=='bigdonut'){const cx=x0+w/2,cy=y0+rh/2-2;g.fillStyle='#b07040';g.beginPath();g.arc(cx,cy,26,0,TAU);g.fill();g.fillStyle='#ff8ac8';g.beginPath();g.arc(cx,cy,23,0,TAU);g.fill();
+   for(let i=0;i<40;i++){const a=R()*TAU,r=rnd(10,21);g.fillStyle=pick(['#fff','#ff0','#0cf','#6f6','#f44']);g.fillRect(cx+Math.cos(a)*r,cy+Math.sin(a)*r,2,1)}g.fillStyle=roof;g.beginPath();g.arc(cx,cy,8,0,TAU);g.fill();g.fillStyle='#000';g.beginPath();g.arc(cx,cy,7,0,TAU);g.fillStyle=shade(roof,.8);g.fill()}
+  else if(it=='vault'){g.fillStyle='#ddc060';g.fillRect(x0+w/2-14,y0+20,28,28);ptext(g,'$',x0+w/2,y0+24,'#7a5a10',4,'center',null)}}
+ // facade
+ const fy=y0+rh;g.fillStyle=wall;g.fillRect(x0,fy,w,T);g.fillStyle=shade(wall,1.3);g.fillRect(x0,fy,w,1);g.fillStyle=shade(wall,.7);g.fillRect(x0,fy+T-2,w,2);
+ const doorX=Math.floor((x0+w/2)/T)*T;const isShop=b.type!='apart';
+ for(let x=x0+3;x<x0+w-6;x+=9){if(Math.abs(x+3-(doorX+8))<9)continue;g.fillStyle='#1c2638';g.fillRect(x,fy+4,6,7);g.fillStyle='#5a7aa0';g.fillRect(x,fy+4,6,2);g.fillStyle=shade(wall,1.2);g.fillRect(x-1,fy+11,8,1);if(R()<.65){wg.fillStyle=pick(['#ffd870','#ffe9a0','#ffc050','#fff0c0']);wg.fillRect(x,fy+4,6,7)}}
+ g.fillStyle='#2a1a10';g.fillRect(doorX+4,fy+3,8,13);g.fillStyle='#6a4020';g.fillRect(doorX+5,fy+4,6,12);g.fillStyle='#ec4';g.fillRect(doorX+9,fy+10,1,1);wg.fillStyle='#ffcf70';wg.fillRect(doorX+4,fy+12,8,6);
+ if(isShop&&w>=48){const ac=b.type=='police'?['#2850b0','#fff']:b.type=='donut'?['#ff8ac8','#fff']:pick([['#c02828','#fff'],['#208040','#fff'],['#2050a0','#fff'],['#d08020','#fff']]);for(let x=x0+2;x<x0+w-2;x+=4){g.fillStyle=ac[(x/4|0)%2];g.fillRect(x,fy-3,4,4)}g.fillStyle='rgba(0,0,0,.3)';g.fillRect(x0+2,fy+1,w-4,1)}
+ // sign
+ const name=b.name||'';const sw=name.length*4+5;const sx=x0+w/2-sw/2,sy=fy-13;g.fillStyle='#111';g.fillRect(sx-1,sy-1,sw+2,10);g.fillStyle=b.type=='police'?'#1a2a6a':b.type=='donut'?'#6a1a4a':'#2a2a3a';g.fillRect(sx,sy,sw,8);
+ const sc=b.type=='police'?'#8cf':b.type=='donut'?'#fbe':b.type=='bank'?'#fd6':'#fff';ptext(g,name,x0+w/2,sy+1,sc,1,'center',null);wg.fillStyle=sc;wg.globalAlpha=.5;wg.fillRect(sx,sy,sw,8);wg.globalAlpha=1}
+function drawPark(g,b){const x0=(b.bx*P+4)*T,y0=(b.by*P+4)*T;
+ if(b.type=='park'){for(const[tx,ty]of[[1,1],[5,1],[1,5],[2,3],[5,5],[3,6],[6,3]]){drawProp(g,'tree',x0+tx*T-8+T/2,y0+ty*T-8+T/2)}drawProp(g,'bench',x0+3*T+T/2-8,y0+2*T,0,0);ptext(g,'PARK',x0+3.5*T,y0+6*T+4,'#fff',1)}
+ else{const cx=x0+3.5*T,cy=y0+3.5*T;g.fillStyle='#888';g.beginPath();g.arc(cx,cy,18,0,TAU);g.fill();g.fillStyle='#3a7ac8';g.beginPath();g.arc(cx,cy,15,0,TAU);g.fill();g.fillStyle='#aaa';g.fillRect(cx-3,cy-3,6,6);g.fillStyle='#bfe';g.fillRect(cx-1,cy-6,2,4);
+  for(const[tx,ty]of[[0,0],[6,0],[0,6],[6,6]])drawProp(g,'tree',x0+tx*T,y0+ty*T);ptext(g,'PLAZA',cx,y0+5*T+8,'#fff',1)}}
+
+// ---------- people sprites: canvas 12x22, frames: [dir 0 down,1 up,2 side] x [0 stand,1 stepA,2 stepB] + lying
+const SKINS=['#ffdbb5','#f0c090','#c88a5a','#8a5a3a','#5e3a22','#ffd0c0'];
+const HAIRC=['#1a1410','#5a3a1a','#a0602a','#e0c060','#c03020','#888','#ddd','#2a2a6a'];
+const SHIRTS=['#c33','#3a3','#cc3','#c6c','#3cc','#f93','#eee','#555','#36c','#933','#7a5','#f7a','#fa0','#468'];
+const PANTS=['#335','#224','#543','#444','#8a7a5a','#226','#633','#999'];
+function randLook(){return{skin:pick(SKINS),hair:pick(HAIRC),hs:ri(0,6),shirt:pick(SHIRTS),pants:pick(PANTS),shoes:pick(['#222','#fff','#a52','#333']),build:ri(0,2),ht:R()<.12?0:R()<.8?1:2,glasses:R()<.2,bag:R()<.2?pick(['#a52','#c3c','#333']):null,beard:R()<.15,hat:R()<.15?pick(['#c22','#228','#ec3','#333']):null,old:R()<.1}}
+const COP_LOOK={skin:'#f0c090',hair:'#3a2a1a',hs:1,shirt:'#2c4cb0',pants:'#1a2550',shoes:'#111',build:1,ht:1,cop:true};
+function drawPersonFrame(g,L,dir,fr,ox,oy){const p=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(ox+x,oy+y,w,h)};
+ const legL=[3,4,5][L.ht],torso=[4,6,7][L.ht],bw=[4,6,7][L.build],hx=6-2.5|0;const feet=21;const legTop=feet-legL+1,tTop=legTop-torso,hTop=tTop-5;const tx=6-Math.ceil(bw/2);
+ // shadow
+ p(2,feet,8,1,'rgba(0,0,0,.3)');
+ // legs
+ const s1=fr==1?-1:0,s2=fr==2?-1:0;
+ if(dir==2){p(5+(fr==1?1:fr==2?-1:0),legTop,2,legL+s1+s2+ (fr?0:0),L.pants);p(5+(fr==1?1:fr==2?-1:0),feet-1,3,1,L.shoes);if(fr){p(5+(fr==1?-1:1),legTop,2,legL-1,shade(L.pants,.8))}}
+ else{p(tx+1,legTop,2,legL+s1,L.pants);p(tx+bw-3,legTop,2,legL+s2,L.pants);p(tx+1,feet-1+s1,2,1,L.shoes);p(tx+bw-3,feet-1+s2,2,1,L.shoes)}
+ // torso
+ p(tx,tTop,bw,torso,L.shirt);p(tx,tTop+torso-1,bw,1,shade(L.shirt,.75));
+ if(L.cop){p(tx,tTop+torso-2,bw,1,'#111');if(dir==0){p(tx+1,tTop+1,1,1,'#fd3');p(tx+bw-2,tTop+1,1,1,'#ccc')}}
+ if(L.apron)p(tx+1,tTop+1,bw-2,torso-1,L.apron);
+ // arms
+ const sw=fr==1?1:fr==2?-1:0;if(dir==2){p(5-sw,tTop+1,2,torso-1,shade(L.shirt,.85));p(5-sw,tTop+torso-1,2,1,L.skin)}else{p(tx-1,tTop+1+sw,1,torso-2,shade(L.shirt,.85));p(tx+bw,tTop+1-sw,1,torso-2,shade(L.shirt,.85));p(tx-1,tTop+torso-1+sw,1,1,L.skin);p(tx+bw,tTop+torso-1-sw,1,1,L.skin)}
+ if(L.bag&&dir!=1)p(tx+bw,tTop+2,2,3,L.bag);
+ // head
+ const hx0=3;p(hx0,hTop,6,5,L.skin);
+ if(dir==0){p(hx0+1,hTop+2,1,1,'#111');p(hx0+4,hTop+2,1,1,'#111');if(L.glasses){p(hx0,hTop+2,6,1,'#222');p(hx0+1,hTop+2,1,1,'#8cf');p(hx0+4,hTop+2,1,1,'#8cf')}if(L.beard)p(hx0+1,hTop+4,4,1,L.hair);if(L.stache)p(hx0+1,hTop+3,4,1,'#3a2a1a')}
+ if(dir==2){p(hx0+4,hTop+2,1,1,'#111');p(hx0+6,hTop+3,1,1,L.skin);if(L.glasses)p(hx0+3,hTop+2,3,1,'#222')}
+ // hair / hats
+ const hc=L.old?'#ddd':L.hair;
+ if(L.cop){p(hx0-1,hTop-1,8,2,'#1a2550');p(hx0,hTop-2,6,1,'#1a2550');if(dir==0){p(hx0-1,hTop+1,8,1,'#111');p(hx0+2,hTop-1,2,1,'#fd3')}}
+ else if(L.hat){p(hx0,hTop-1,6,2,L.hat);if(dir!=1)p(dir==2?hx0+4:hx0,hTop+1,dir==2?4:6,1,shade(L.hat,.7))}
+ else{const hs=L.hs;if(hs==1||hs==2||hs==4||hs==5||hs==6){p(hx0,hTop-1,6,2,hc);if(dir==1)p(hx0,hTop,6,4,hc);if(dir==2)p(hx0,hTop,2,3,hc)}
+  if(hs==2){p(hx0-1,hTop,1,5,hc);p(hx0+6,hTop,1,5,hc);if(dir==1)p(hx0-1,hTop,8,6,hc)}
+  if(hs==3)p(hx0+2,hTop-2,2,3,hc);if(hs==4)p(hx0+2,hTop-3,2,2,hc);if(hs==6){p(hx0-1,hTop-2,8,2,hc)}}
+ if(L.old&&dir!=1)p(dir==2?10:tx+bw+1,tTop+1,1,feet-tTop-1,'#7a5a3a')}
+const sprCache=new Map();
+function personSprite(L){let s=sprCache.get(L);if(s)return s;const[c,g]=mkCanvas(12*10,22);for(let d=0;d<3;d++)for(let f=0;f<3;f++)drawPersonFrame(g,L,d,f,(d*3+f)*12,0);
+ // lying frame (index 9): rotate stand-side
+ const[t,tg]=mkCanvas(12,22);drawPersonFrame(tg,L,0,0,0,0);g.save();g.translate(9*12+6,14);g.rotate(Math.PI/2);g.drawImage(t,-11,-6);g.restore();sprCache.set(L,c);return c}
+function drawPerson(g,L,x,y,dir,anim,state){const s=personSprite(L);let fi,flip=false;
+ if(state=='down'){fi=9}else{let d=0;if(Math.abs(Math.cos(dir))>.7){d=2;flip=Math.cos(dir)<0}else d=Math.sin(dir)<0?1:0;const f=anim<0?0:[1,0,2,0][(anim|0)%4];fi=d*3+f}
+ const bob=(state!='down'&&anim>=0&&((anim|0)%2==1))?-1:0;x=Math.round(x);y=Math.round(y);
+ if(flip){g.save();g.translate(x,0);g.scale(-1,1);g.drawImage(s,fi*12,0,12,22,-6,y-20+bob,12,22);g.restore()}else g.drawImage(s,fi*12,0,12,22,x-6,y-20+bob,12,22)}
+function portraitURL(L){const[c,g]=mkCanvas(12,22);drawPersonFrame(g,L,0,0,0,0);const[b,bg]=mkCanvas(48,64);bg.fillStyle='#9ab';bg.fillRect(0,0,48,64);for(let i=0;i<8;i++){bg.fillStyle='#8a9aaa';bg.fillRect(0,i*8,48,1)}bg.drawImage(c,0,0,12,22,0,-4,48,88);return b.toDataURL()}
+// ---------- cars: drawn facing east, canvas 24x14
+const CARCOL=['#c22','#25b','#eb2','#2a5','#ddd','#93c','#f80','#333','#7ad','#a63','#5c5','#e5a'];
+function carSprite(type,col){const key=type+col;let s=sprCache.get(key);if(s)return s;const[c,g]=mkCanvas(26,16);const p=(x,y,w,h,cl)=>{g.fillStyle=cl;g.fillRect(x,y,w,h)};
+ const L=type=='van'||type=='truck'?24:type=='sport'?20:22,Wd=type=='van'||type=='truck'?12:10,ox=(26-L)/2|0,oy=(16-Wd)/2|0;
+ p(ox+1,oy+Wd,L-1,2,'rgba(0,0,0,.35)');
+ p(ox+2,oy-1,4,1,'#111');p(ox+L-6,oy-1,4,1,'#111');p(ox+2,oy+Wd,4,1,'#111');p(ox+L-6,oy+Wd,4,1,'#111');
+ p(ox,oy,L,Wd,col);p(ox,oy,L,1,shade(col,1.3));p(ox,oy+Wd-1,L,1,shade(col,.65));
+ if(type=='police'){p(ox,oy,L,Wd,'#f4f4f4');p(ox,oy,6,Wd,'#18182a');p(ox+L-5,oy,5,Wd,'#18182a');p(ox+6,oy+Wd/2-1,10,2,'#2848b8')}
+ if(type=='taxi'){p(ox+9,oy+Wd/2-2,4,4,'#222');p(ox+10,oy+Wd/2-1,2,2,'#ff8')}
+ if(type=='truck'){p(ox,oy,9,Wd,shade(col,.85));p(ox+10,oy+1,L-11,Wd-2,'#8a6a40');p(ox+10,oy+3,L-11,1,'#6a4a20')}
+ else{const wsx=type=='van'?ox+L-8:ox+L-9;p(wsx,oy+1,3,Wd-2,'#9cd8f0');p(wsx+1,oy+2,1,2,'#e0f8ff');p(ox+3,oy+1,2,Wd-2,'#6a9ab8');if(type!='van')p(ox+6,oy+1,wsx-ox-6,Wd-2,shade(col,1.1))}
+ if(type=='sport'){p(ox+8,oy+Wd/2,6,1,'#111')}
+ p(ox+L-1,oy+1,1,2,'#ffe');p(ox+L-1,oy+Wd-3,1,2,'#ffe');p(ox,oy+1,1,2,'#c00');p(ox,oy+Wd-3,1,2,'#c00');
+ sprCache.set(key,c);return c}
+function drawCarSpr(g,c,type,col,ang,extra){g.save();g.translate(Math.round(c.x),Math.round(c.y));g.rotate(ang);g.drawImage(carSprite(type,col),-13,-8);
+ if(type=='police'){const on=(performance.now()/130|0)%2;const sir=extra&&extra.siren;g.fillStyle=sir?(on?'#f22':'#511'):'#622';g.fillRect(-1,-4,2,4);g.fillStyle=sir?(on?'#226':'#33f'):'#226';g.fillRect(-1,0,2,4);if(extra&&extra.passenger){g.fillStyle='#000';g.fillRect(-6,-2,3,4)}}
+ if(extra&&extra.busted){g.fillStyle='#444';g.fillRect(-6,-3,4,3);g.fillRect(3,1,3,2)}
+ g.restore()}
+
+// ---------- interiors
+const INTERIORS={
+ station:{name:'Police Station',grid:[
+'##########################',
+'#wwwwwww#cccccccc#ttttttt#',
+'#wwwwwww#cccccccc#ttttttt#',
+'#wwwwwww#cccccccc#ttttttt#',
+'#wwwwwww#cccccccc#ttttttt#',
+'###..#######..#######..###',
+'#tttttttttttttttttttttttt#',
+'#tttttttttttttttttttttttt#',
+'#tttttttttttttttttttttttt#',
+'#========mmmmmmmm#ttttttt#',
+'#bbbbbbb=mmmmmmmm#ttttttt#',
+'#bbbbbbb=mmmmmmmm.ttttttt#',
+'#bbbbbbb=mmmmmmmm#ttttttt#',
+'#bbbbbbb=mmmmmmmm#ttttttt#',
+'#bbbbbbb=mmmmmmmm#ttttttt#',
+'############DD############'],
+ labels:[[4,0.2,'INTERROGATION'],[12.5,0.2,"SGT'S OFFICE"],[21.5,0.2,'BOOKING'],[4,8.2,'HOLDING'],[21.5,8.2,'BULLPEN']]},
+ donut:{name:'Donut Shop',grid:[
+'##############',
+'#ffffffffffff#',
+'#ffffffffffff#',
+'#ffffffffffff#',
+'#ffffffffffff#',
+'#ffffffffffff#',
+'#ffffffffffff#',
+'#ffffffffffff#',
+'#ffffffffffff#',
+'######DD######']},
+ bank:{name:'Bank',grid:['##############','#mmmmmmmmmmmm#','#mmmmmmmmmmmm#','#mmmmmmmmmmmm#','#mmmmmmmmmmmm#','#mmmmmmmmmmmm#','#mmmmmmmmmmmm#','#mmmmmmmmmmmm#','#mmmmmmmmmmmm#','######DD######']},
+ jewel:{name:'Glitter & Sons',grid:['##############','#cccccccccccc#','#cccccccccccc#','#cccccccccccc#','#cccccccccccc#','#cccccccccccc#','#cccccccccccc#','#cccccccccccc#','#cccccccccccc#','######DD######']},
+ apart:{name:'Apartment 4B',grid:['##############','#wwwwwwwwwwww#','#wwwwwwwwwwww#','#wwwwwwwwwwww#','#wwwwwwwwwwww#','#wwwwwwwwwwww#','#wwwwwwwwwwww#','#wwwwwwwwwwww#','#wwwwwwwwwwww#','######DD######']},
+ pawn:{name:'Pawn Shop',grid:['##############','#tttttttttttt#','#tttttttttttt#','#tttttttttttt#','#tttttttttttt#','#tttttttttttt#','#tttttttttttt#','#tttttttttttt#','#tttttttttttt#','######DD######']}};
+// objects: x,y,w,h in tiles (top-left), kind, solid, act key
+const IOBJ={
+ station:[{k:'table',x:2.5,y:2,w:3,h:1.4,solid:1,act:'interrogate',label:'INTERROGATE'},{k:'chair',x:3.5,y:1.2,w:1,h:.8},{k:'chair',x:3.5,y:3.4,w:1,h:.8},{k:'mirror',x:1,y:.9,w:2.5,h:.4},{k:'lamp',x:4,y:2.4,w:.1,h:.1},
+  {k:'desk',x:11,y:2,w:3,h:1.2,solid:1},{k:'board',x:9.3,y:.9,w:2.8,h:.6,act:'board',label:'EVIDENCE'},{k:'flag',x:15.4,y:1,w:.6,h:.8},{k:'plant',x:15.5,y:4,w:.8,h:.8,solid:1},{k:'file',x:9.2,y:3.8,w:.8,h:1,solid:1},
+  {k:'chart',x:19,y:.9,w:2.5,h:.4},{k:'camera',x:20,y:3,w:1,h:1,solid:1},{k:'bookdesk',x:22,y:2,w:2.4,h:1.2,solid:1,act:'book',label:'BOOK'},
+  {k:'bench',x:1.3,y:13.6,w:6,h:.8},{k:'toilet',x:6.6,y:10.2,w:.8,h:.8},
+  {k:'counter',x:10.5,y:11,w:5,h:1,solid:1,act:'frontdesk',label:'TALK'},{k:'plant',x:9.2,y:14,w:.8,h:.8,solid:1},{k:'plant',x:15.9,y:14,w:.8,h:.8,solid:1},{k:'chairs',x:9.4,y:12.8,w:1,h:1},
+  {k:'mydesk',x:19.5,y:11,w:2.6,h:1.3,solid:1,act:'paperwork',label:'PAPERWORK'},{k:'desk2',x:19.5,y:13.6,w:2.6,h:1.1,solid:1},{k:'coffee',x:24,y:9.2,w:.9,h:.9,solid:1,act:'coffee',label:'COFFEE'},
+  {k:'donutbox',x:23,y:13.8,w:1.5,h:.8,solid:1,act:'evdonut',label:'EVIDENCE?'},{k:'file',x:24.1,y:11,w:.8,h:2,solid:1},{k:'vending',x:24.1,y:6.1,w:.9,h:1,solid:1,act:'vend',label:'VENDING'}],
+ donut:[{k:'dcounter',x:1,y:2,w:10,h:1,solid:1,act:'buy',label:'ORDER'},{k:'dcase',x:2,y:1,w:3,h:.8},{k:'dcase',x:6,y:1,w:3,h:.8},{k:'fryer',x:11.2,y:1,w:1.6,h:1.6,solid:1},
+  {k:'rtable',x:2,y:5,w:1.4,h:1.4,solid:1},{k:'rtable',x:6,y:5,w:1.4,h:1.4,solid:1},{k:'rtable',x:10,y:5,w:1.4,h:1.4,solid:1},{k:'neon',x:5,y:.1,w:4,h:.6}],
+ bank:[{k:'teller',x:1,y:2,w:8,h:1,solid:1},{k:'vault',x:10,y:.6,w:3,h:2.2,solid:1},{k:'plant',x:1.2,y:7.8,w:.8,h:.8,solid:1},{k:'rope',x:3,y:5,w:6,h:.3}],
+ jewel:[{k:'jcase',x:1.5,y:2,w:3,h:1.2,solid:1},{k:'jcase',x:6,y:2,w:3,h:1.2,solid:1},{k:'jcase',x:10,y:5,w:2.5,h:1.2,solid:1},{k:'jcase',x:2,y:6,w:3,h:1.2,solid:1},{k:'mirror2',x:11,y:.9,w:2,h:.5}],
+ apart:[{k:'bed',x:1.2,y:1,w:2.4,h:3,solid:1},{k:'couch',x:6,y:4.5,w:3.5,h:1.2,solid:1},{k:'tv',x:6.5,y:1,w:2.5,h:.6,solid:1},{k:'dogbed',x:10.5,y:6.5,w:1.6,h:1.2},{k:'fridge',x:11.8,y:1,w:1,h:1.4,solid:1},{k:'rug',x:5,y:2.5,w:5,h:1.6}],
+ pawn:[{k:'shelf',x:1.2,y:1,w:5,h:.9,solid:1},{k:'shelf',x:7.5,y:1,w:5,h:.9,solid:1},{k:'pcounter',x:8,y:5,w:4.5,h:1,solid:1},{k:'guitar',x:1.4,y:4,w:.6,h:1.6},{k:'chicken',x:4,y:6,w:.8,h:.6}]};
+const FLOORS={w:['#8a5a32','#7a4c28'],c:['#7a2a3a','#6a2232'],t:['#c8c8d0','#b0b0bc'],b:['#6a6a70','#5e5e64'],m:['#e0dccc','#cfcab8'],f:['#ffd0e4','#fff0f6']};
+const ICACHE={};
+function interiorCanvas(key){if(ICACHE[key])return ICACHE[key];const I=INTERIORS[key],gw=I.grid[0].length,gh=I.grid.length;const[c,g]=mkCanvas(gw*T,gh*T);
+ for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){const ch=I.grid[y][x],X=x*T,Y=y*T;
+  if(ch=='#'){g.fillStyle='#2a2a38';g.fillRect(X,Y,T,T);const below=y+1<gh&&I.grid[y+1][x]!='#'&&I.grid[y+1][x]!='=';if(below){g.fillStyle=key=='donut'?'#e070a8':key=='station'?'#5a6a8a':'#8a7a6a';g.fillRect(X,Y+6,T,10);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(X,Y+14,T,2);g.fillStyle='rgba(255,255,255,.15)';g.fillRect(X,Y+6,T,1)}else{g.fillStyle='#3a3a4c';g.fillRect(X+1,Y+1,T-2,T-2)}}
+  else if(ch=='='){const fl=FLOORS.b;g.fillStyle=fl[0];g.fillRect(X,Y,T,T);g.fillStyle='#888';for(let i=1;i<T;i+=4){if(I.grid[y][x-1]=='='||I.grid[y][x+1]=='=')g.fillRect(X+i,Y+2,2,13);else g.fillRect(X+5,Y+i,6,2)}g.fillStyle='#aaa';g.fillRect(X,Y+2,T,2)}
+  else if(ch=='D'){g.fillStyle='#5a3a1a';g.fillRect(X,Y,T,T);g.fillStyle='#a85';g.fillRect(X+1,Y+2,T-2,12);g.fillStyle='#c33';g.fillRect(X+2,Y+4,T-4,8)}
+  else{const fl=FLOORS[ch]||FLOORS.t;const alt=ch=='w'?(x+(y>>1))%2:ch=='c'?0:(x+y)%2;g.fillStyle=fl[alt];g.fillRect(X,Y,T,T);if(ch=='w'){g.fillStyle='rgba(0,0,0,.12)';g.fillRect(X,Y+7,T,1);g.fillRect(X+((y*5)%T),Y,1,7)}if(ch=='c'&&R()<.3){g.fillStyle=fl[1];g.fillRect(X+ri(0,12),Y+ri(0,12),3,3)}if(ch=='m'){g.fillStyle='rgba(255,255,255,.25)';g.fillRect(X,Y,T,1);g.fillRect(X,Y,1,T)}}}
+ for(const o of IOBJ[key]||[])drawIObj(g,o,key);
+ for(const l of I.labels||[])ptext(g,l[2],l[0]*T,l[1]*T+1,'#fff',1,'center','#000');
+ if(key!='station'&&key!='donut'){/* crime scene tape drawn dynamically */}
+ ICACHE[key]=c;return c}
+function drawIObj(g,o,key){const X=o.x*T,Y=o.y*T,w=o.w*T,h=o.h*T;const p=(x,y,ww,hh,c)=>{g.fillStyle=c;g.fillRect(X+x,Y+y,ww,hh)};const sh=()=>p(2,h,w,3,'rgba(0,0,0,.3)');
+ switch(o.k){
+ case'table':case'desk':case'desk2':case'mydesk':case'bookdesk':sh();p(0,0,w,h,'#6a4020');p(0,0,w,2,'#8a5a30');p(1,h-2,w-2,2,'#4a2a10');
+  if(o.k=='mydesk'||o.k=='desk2'){for(let i=0;i<4;i++)p(3+i*2,-4-i*2,10,6,i%2?'#eee':'#ddd');p(w-14,2,10,7,'#222');p(w-13,3,8,4,'#4a8')}
+  if(o.k=='desk'){p(4,3,8,5,'#eee');p(w-10,2,6,6,'#2a4');ptext(g,'SGT',X+w/2,Y+h-7,'#fd6',1)}if(o.k=='bookdesk'){p(4,2,10,6,'#ddd');p(18,3,6,4,'#333')}if(o.k=='table'){p(w/2-4,h/2-3,8,5,'#ccc')}break;
+ case'chair':p(2,2,w-4,h-2,'#333');p(3,3,w-6,h-5,'#555');break;
+ case'mirror':case'mirror2':p(0,0,w,h+2,'#223');p(1,1,w-2,h,'#7ac');p(3,1,4,h,'#bdf');break;
+ case'lamp':break;
+ case'board':p(0,0,w,h+6,'#6a4020');p(2,1,w-4,h+3,'#b08050');for(let i=0;i<5;i++)p(4+i*8,2+(i%2)*2,6,5,['#ffa','#fff','#aff','#faa','#ffa'][i]);p(5,4,30,1,'#c22');break;
+ case'flag':p(0,0,2,h,'#555');p(2,0,8,6,'#2848b8');p(2,2,8,1,'#fff');break;
+ case'plant':sh();p(2,6,w-4,h-6,'#8a4a2a');p(0,0,w,8,'#2a8a3a');p(3,-3,6,5,'#3aa04a');break;
+ case'file':sh();p(0,0,w,h,'#6a6a78');for(let i=3;i<h;i+=8)p(2,i,w-4,1,'#3a3a44');break;
+ case'chart':for(let i=0;i<5;i++){p(0,i*1.5-6,w,1,'#ccc')}ptext(g,"6'",X+w+2,Y-8,'#fff',1);break;
+ case'camera':sh();p(4,4,8,8,'#222');p(6,6,4,4,'#68a');break;
+ case'bench':p(0,0,w,h,'#5a4a3a');break;
+ case'toilet':p(0,0,w,h,'#ddd');p(2,2,w-4,h-4,'#9ab');break;
+ case'counter':case'dcounter':case'teller':case'pcounter':sh();p(0,0,w,h,o.k=='dcounter'?'#c05080':o.k=='teller'?'#a08040':'#5a4a6a');p(0,0,w,3,o.k=='dcounter'?'#ff9ac8':'#ccc');if(o.k=='teller')for(let i=8;i<w;i+=24)p(i,-6,1,8,'#bbb');if(o.k=='dcounter'){p(w-20,-4,8,6,'#333');p(w-19,-3,6,2,'#4f4')}break;
+ case'chairs':p(0,0,T,T,'#3a4a6a');break;
+ case'coffee':sh();p(0,0,w,h,'#333');p(3,3,8,5,'#a33');p(5,9,4,4,'#fff');break;
+ case'vending':sh();p(0,0,w,h,'#a22');p(2,2,w-6,h-4,'#cdf');for(let i=0;i<3;i++)p(3,4+i*4,6,2,['#fd3','#3c3','#f6f'][i]);break;
+ case'donutbox':sh();p(0,0,w,h,'#f8d0e0');p(2,2,w-4,h-4,'#fff');for(let i=0;i<3;i++){p(4+i*6,4,5,5,'#c97');p(5+i*6,5,3,3,'#f8c')}break;
+ case'dcase':p(0,0,w,h,'#ccefff');for(let i=0;i<w-4;i+=6){p(2+i,3,5,5,'#c97');p(3+i,4,3,3,pick(['#f8c','#fff','#a62','#fd6']))}break;
+ case'fryer':sh();p(0,0,w,h,'#999');p(3,3,w-6,h-6,'#c90');break;
+ case'rtable':sh();g.fillStyle='#ddd';g.beginPath();g.arc(X+w/2,Y+h/2,w/2,0,TAU);g.fill();g.fillStyle='#fff';g.fillRect(X+w/2-2,Y+h/2-2,4,4);break;
+ case'neon':ptext(g,'DONUTS',X+w/2,Y,'#ff6ac8',2,'center','#601040');break;
+ case'vault':sh();p(0,0,w,h,'#777');g.fillStyle='#aaa';g.beginPath();g.arc(X+w/2,Y+h/2,h/2-2,0,TAU);g.fill();g.fillStyle='#555';g.fillRect(X+w/2-1,Y+4,2,h-8);g.fillRect(X+w/2-10,Y+h/2-1,20,2);break;
+ case'rope':p(0,0,w,2,'#a22');for(let i=0;i<=w;i+=w/3)p(i-1,-3,3,6,'#cb4');break;
+ case'jcase':sh();p(0,0,w,h,'#556');p(2,2,w-4,h-4,'#bdf');for(let i=4;i<w-4;i+=8)p(i,6,3,3,pick(['#f4f','#4ff','#ff4','#fff']));break;
+ case'bed':sh();p(0,0,w,h,'#6a4020');p(2,2,w-4,h-4,'#ddd');p(2,2,w-4,10,'#fff');p(2,14,w-4,h-16,'#48a');break;
+ case'couch':sh();p(0,0,w,h,'#7a3a3a');p(2,0,w-4,6,'#9a4a4a');break;
+ case'tv':p(0,0,w,h+4,'#111');p(2,1,w-4,h+1,'#28c');break;
+ case'dogbed':p(0,0,w,h,'#c8a');p(3,3,w-6,h-6,'#e8c');ptext(g,'FLUFF',X+w/2,Y-7,'#fff',1);break;
+ case'fridge':sh();p(0,0,w,h,'#eee');p(w-3,4,1,6,'#999');break;
+ case'rug':p(0,0,w,h,'#a64');p(3,3,w-6,h-6,'#c86');break;
+ case'shelf':sh();p(0,0,w,h,'#6a4a2a');for(let i=2;i<w-4;i+=7)p(i,2,5,h-4,pick(['#c33','#3a3','#ec3','#38c','#999','#f8c']));break;
+ case'guitar':p(2,0,2,h*.5,'#6a3a1a');g.fillStyle='#c84';g.beginPath();g.arc(X+3,Y+h*.7,5,0,TAU);g.fill();break;
+ case'chicken':p(0,0,w,h,'#ec3');p(w-3,-2,3,3,'#ec3');p(w,-1,2,1,'#f80');break;}}
+function iSolid(key,px,py){const I=INTERIORS[key];const tx=Math.floor(px/T),ty=Math.floor(py/T);const ch=(I.grid[ty]||'')[tx];if(ch===undefined||ch=='#'||ch=='=')return true;
+ for(const o of IOBJ[key]||[])if(o.solid&&px>o.x*T&&px<(o.x+o.w)*T&&py>o.y*T&&py<(o.y+o.h)*T)return true;return false}
+function iDoor(key){const I=INTERIORS[key];for(let y=0;y<I.grid.length;y++){const x=I.grid[y].indexOf('D');if(x>=0)return{x:(x+1)*T,y:(y-0.6)*T}}}
+
+// ---------- state
+const CR={shoplift:{n:'Shoplifting',code:'10-SL',pts:120,flee:.9},jaywalk:{n:'Jaywalking',code:'10-JW',pts:40,flee:.15,minor:1},litter:{n:'Littering',code:'10-LT',pts:35,flee:.25,minor:1},
+ noise:{n:'Boombox Disturbance',code:'10-BB',pts:45,flee:.1,minor:1},vandal:{n:'Vandalism',code:'10-VD',pts:100,flee:.7},mug:{n:'Mugging',code:'10-MG',pts:180,flee:1},gta:{n:'Grand Theft Auto',code:'10-GTA',pts:260},warrant:{n:'Outstanding Warrant',code:'10-WR',pts:500,flee:1}};
+const FIRST=['Vinnie','Barb','Dusty','Gus','Marge','Skeeter','Tony','Lulu','Clem','Rex','Dolores','Chad','Brenda','Moose','Earl','Fran','Biff','Pearl','Otis','Nadia','Sal','Trixie','Leroy','Wanda','Hank','Ivy'];
+const LAST=['Pastrami','McGillicuddy','Bonkowski','Fettucini','Schlotz','Wigglesworth','Dingle','Kowalczyk','Pfeiffer','Throckmorton','Noodleman','Crumb','Bagelstein','Snorkel','Puddlesworth','Grubb'];
+const rname=()=>pick(FIRST)+' '+pick(LAST);
+let S,me,patrol,peds,cars,parts,floaters,crimes,trail;
+const cam={x:0,y:0,z:3};
+function newShift(){S={mode:'play',time:12*60,score:0,rep:50,hp:100,st:100,donuts:1,arrests:0,tickets:0,booked:0,held:[],carry:[],scene:'city',cityRet:null,paused:false,modal:false,shake:0,msgs:[],boost:0,spawnT:6,banterT:20,caseDelay:0,complainT:0,crashT:0,papers:0,siren:false,bigMap:false,stats:{conf:0,perfectForms:0,donutsEaten:0,cases:0},lastMsg:''};
+ me={x:STATION.x,y:STATION.y+10,dir:Math.PI/2,anim:-1,inCar:false,tackle:0,L:COP_LOOK};
+ patrol={x:STATION.x+40,y:1*PP+PP+36,a:0,vx:0,vy:0,f:0};patrol.y=2*PP+36;patrol.x=1*PP+100;
+ peds=[];cars=[];parts=[];floaters=[];crimes=[];trail=[];
+ for(let i=0;i<60;i++)peds.push(mkPed());for(let i=0;i<30;i++){const c=mkCar();if(c)cars.push(c)}
+ cam.x=me.x;cam.y=me.y;newCase();
+ radio('DISPATCH: Afternoon, Unit 12. Shift runs 12:00 to 20:00. Try not to eat the evidence.','#8cf');
+ setTimeout(()=>S&&radio(`SGT KRUPKE: New case on the evidence board: "${S.case.tpl.title}". Swing by the station.`,'#fd6'),3000)}
+// ---------- peds
+function randTile(test){for(let i=0;i<800;i++){const x=ri(1,N-2),y=ri(1,N-2);if(test(map[y*N+x],x,y))return{x,y}}return{x:4,y:3}}
+function mkPed(L){const t=randTile(v=>v==1);return{x:(t.x+.5)*T,y:(t.y+.5)*T,tx:t.x,ty:t.y,dir:pick([0,Math.PI/2,Math.PI,-Math.PI/2]),L:L||randLook(),anim:0,spd:rnd(16,26),state:'walk',name:rname(),wait:0,crime:null,down:0,cuffed:false}}
+const D4=[[1,0],[0,1],[-1,0],[0,-1]];
+function pedNextTile(p){const cx=Math.floor(p.x/T),cy=Math.floor(p.y/T);const fd=[Math.round(Math.cos(p.dir)),Math.round(Math.sin(p.dir))];
+ let opts=D4.filter(d=>!(d[0]==-fd[0]&&d[1]==-fd[1]));shuffle(opts);opts.sort((a,b)=>((b[0]==fd[0]&&b[1]==fd[1])?1:0)-((a[0]==fd[0]&&a[1]==fd[1])?1:0));if(R()<.25)shuffle(opts);
+ for(const d of opts){const nx=cx+d[0],ny=cy+d[1];const t=tile(nx,ny);
+  if(walkPed(t)){p.tx=nx;p.ty=ny;p.dir=Math.atan2(d[1],d[0]);return}
+  if(t==0&&isCross(nx,ny)&&R()<.5){// crosswalk: wait for light
+   let kx,ky,ok;if(d[1]==0){kx=Math.floor(nx/P);ky=Math.floor(ny/P)+(ny%P==P-1?1:0);ok=()=>light(kx,ky).ew=='g'}else{ky=Math.floor(ny/P);kx=Math.floor(nx/P)+(nx%P==P-1?1:0);ok=()=>light(kx,ky).ns=='g'}
+   p.state='waitcross';p.cross={d,ok,tx:cx+d[0]*4,ty:cy+d[1]*4,t:0};p.dir=Math.atan2(d[1],d[0]);return}}
+ p.tx=cx-fd[0];p.ty=cy-fd[1];p.dir+=Math.PI}
+function updPed(p,dt){if(p.hitT)p.hitT-=dt;
+ if(p.inCar)return;
+ if(p.cuffed)return; // handled by follow
+ if(p.down>0){p.down-=dt;if(p.down<=0){p.state=p.crime?'flee':'walk';if(p.crime)floatTxt(p.x,p.y-20,pick(['*WRIGGLES FREE*','LATER COPPER!','NOPE!']),'#fa0')}return}
+ if(p.state=='freeze'){p.ft-=dt;p.anim=-1;if(p.ft<=0)p.state='flee';return}
+ if(p.state=='witness'||p.state=='idle'){p.anim=-1;p.dir=Math.atan2(me.y-p.y,me.x-p.x);if(p.state=='idle'){p.wait-=dt;if(p.wait<=0)p.state='walk'}return}
+ if(p.state=='scared'){p.wait-=dt;p.anim+=dt*6;if(p.wait<=0)p.state='walk';return}
+ if(p.state=='crime')return crimeBehave(p,dt);
+ if(p.state=='flee')return fleeBehave(p,dt);
+ if(p.state=='waitcross'){p.anim=-1;p.cross.t+=dt;if(p.cross.ok()){p.state='cross';p.tx=p.cross.tx;p.ty=p.cross.ty}else if(p.cross.t>14){p.state='walk';p.dir+=Math.PI;p.tx=Math.floor(p.x/T)-Math.round(Math.cos(p.dir-Math.PI));p.ty=Math.floor(p.y/T)}return}
+ const gx=(p.tx+.5)*T,gy=(p.ty+.5)*T,dx=gx-p.x,dy=gy-p.y,d=Math.hypot(dx,dy);const sp=p.spd*(p.state=='cross'?1.6:1);
+ // dodge speeding car
+ if(me.inCar&&Math.hypot(patrol.vx,patrol.vy)>60&&dist(p,patrol)<34&&!p.dodge){p.dodge=.5;const a=Math.atan2(p.y-patrol.y,p.x-patrol.x);p.x+=Math.cos(a)*6;p.y+=Math.sin(a)*6;if(R()<.3)floatTxt(p.x,p.y-20,pick(['WHOA!','HEY!','MY HIP!']),'#fff')}if(p.dodge){p.dodge-=dt;if(p.dodge<0)p.dodge=0}
+ if(d<1.5){p.x=gx;p.y=gy;if(p.state=='cross')p.state='walk';if(R()<.03){p.state='idle';p.wait=rnd(1,4);return}pedNextTile(p)}
+ else{p.x+=dx/d*sp*dt;p.y+=dy/d*sp*dt;p.dir=Math.atan2(dy,dx);p.anim+=dt*sp*.3}}
+function crimeBehave(p,dt){p.ct+=dt;const c=CR[p.crime];p.anim=-1;
+ if(p.crime=='jaywalk'){if(!p.jw){p.jw=nearestRoadPoint(p)}if(p.jw){const dx=p.jw.x-p.x,dy=p.jw.y-p.y,d=Math.hypot(dx,dy);if(d>2){p.x+=dx/d*14*dt;p.y+=dy/d*14*dt;p.dir=Math.atan2(dy,dx);p.anim+=dt*5}else if(R()<dt*.4){p.jw={x:p.x+rnd(-40,40),y:p.y+rnd(-40,40)};if(solidCity(p.jw.x,p.jw.y))p.jw=null}}}
+ if(p.crime=='vandal'&&R()<dt*4)parts.push({x:p.x+rnd(-8,8),y:p.y-6+rnd(-5,5),vx:0,vy:0,c:pick(['#f0f','#0ff','#ff0','#0f0']),life:30,paint:1,s:2});
+ if(p.crime=='litter'&&R()<dt*1.5)parts.push({x:p.x+rnd(-6,6),y:p.y+rnd(0,4),vx:0,vy:0,c:pick(['#fff','#c84','#aaa']),life:25,paint:1,s:2});
+ if(p.crime=='noise'){p.anim+=dt*8;if(R()<dt*3)floatTxt(p.x+rnd(-8,8),p.y-22,pick(['♪','#','*']),pick(['#f6f','#6ff','#ff6']),.9)}
+ if(p.crime=='shoplift'){p.anim+=dt*2}
+ if(p.crime=='mug'&&!p.victim&&p.ct>.5){const v=peds.find(q=>q!=p&&!q.crime&&q.state=='walk'&&dist(q,p)<T*6);if(v){p.victim=v;v.state='scared';v.wait=8;floatTxt(v.x,v.y-22,'HELP! MUGGER!','#f55')}}
+ if(p.victim&&p.ct>2){const d=dist(p,p.victim);if(d>12){p.x+=(p.victim.x-p.x)/d*30*dt;p.y+=(p.victim.y-p.y)/d*30*dt;p.anim+=dt*8}}
+ const near=dist(p,me)<T*(me.inCar&&S.siren?10:5.5);if(near&&R()<(c.flee||0)*dt*3)startFlee(p);
+ if(p.ct>75){p.crime=null;p.state='walk';repChange(-2);radio('DISPATCH: Suspect left the scene. Public is "mildly disappointed."','#f88')}}
+function startFlee(p){p.state='flee';p.ft=0;floatTxt(p.x,p.y-22,pick(['RUN!','NOT TODAY!','YIKES!','*YEET*','COPS!']),'#fa0');SFX.whiff();if(p.victim){p.victim.state='walk';p.victim=null}}
+function fleeBehave(p,dt){p.ft+=dt;const tired=clamp(1-p.ft/30,0.62,1);const spd=(p.crime=='warrant'?66:60)*tired*(p.boostT>0?1.3:1);
+ const ax=p.x-me.x,ay=p.y-me.y,d=Math.hypot(ax,ay)||1;let best=null,bs=-1e9;
+ for(let i=0;i<8;i++){const a=i*TAU/8;const nx=p.x+Math.cos(a)*18,ny=p.y+Math.sin(a)*18;if(solidCity(nx,ny))continue;const s=(Math.cos(a)*ax+Math.sin(a)*ay)/d+(p.lastA!=null?Math.cos(a-p.lastA)*0.6:0)+R()*.2;if(s>bs){bs=s;best=a}}
+ if(best!=null){p.lastA=best;moveCircle(p,Math.cos(best)*spd*dt,Math.sin(best)*spd*dt,4,solidCity);p.dir=best;p.anim+=dt*spd*.35}
+ if(R()<dt*.7)parts.push({x:p.x,y:p.y,vx:rnd(-10,10),vy:-8,c:'#cbb',life:.4,s:2});
+ if(d>T*32){if(p.crime!='warrant'){p.crime=null;p.state='walk';repChange(-3);radio('DISPATCH: You lost the suspect. Sergeant suggests "cardio".','#f88')}}}
+function nearestRoadPoint(p){const tx=p.x/T|0,ty=p.y/T|0;for(let r=1;r<5;r++)for(const[dx,dy]of D4)if(tile(tx+dx*r,ty+dy*r)==0)return{x:(tx+dx*(r+1)+.5)*T,y:(ty+dy*(r+1)+.5)*T};return null}
+function moveCircle(e,dx,dy,r,solid){let hit=0;const ok=(x,y)=>!solid(x-r,y-r)&&!solid(x+r,y-r)&&!solid(x-r,y+r)&&!solid(x+r,y+r);if(ok(e.x+dx,e.y))e.x+=dx;else hit|=1;if(ok(e.x,e.y+dy))e.y+=dy;else hit|=2;return hit}
+// ---------- traffic
+const DX=[1,0,-1,0],DY=[0,1,0,-1];
+const CTYPES=['sedan','sedan','sedan','taxi','van','sport','truck'];
+function laneCoord(dir,k){return k*PP+(dir==0?36:dir==2?12:dir==1?12:36)}
+function mkCar(){for(let tries=0;tries<30;tries++){const dir=ri(0,3),k=ri(0,6),along=ri(0,6)*PP+rnd(70,PP-30);if(along>N*T-20)continue;
+  const c={dir,ang:dir*Math.PI/2,v:0,maxv:rnd(40,58),type:pick(CTYPES),col:pick(CARCOL),inter:-1,turn:null,turnAt:0,blockT:0};if(c.type=='taxi')c.col='#eb2';
+  if(dir%2==0){c.y=laneCoord(dir,k);c.x=along}else{c.x=laneCoord(dir,k);c.y=along}
+  if(c.x>N*T-30||c.y>N*T-30)continue;if(cars.some(o=>Math.hypot(o.x-c.x,o.y-c.y)<40))continue;if(Math.abs(c.x-cam.x)<W/cam.z/2+30&&Math.abs(c.y-cam.y)<H/cam.z/2+30&&S.time>12*60+1)continue;return c}return null}
+function entryDist(c){const d=c.dir;if(d==0){const f=c.x+11;return Math.ceil(f/PP)*PP-f}if(d==2){const f=c.x-11;return f-(Math.floor((f-48)/PP)*PP+48)}if(d==1){const f=c.y+11;return Math.ceil(f/PP)*PP-f}const f=c.y-11;return f-(Math.floor((f-48)/PP)*PP+48)}
+function updCar(c,dt){if(c.stopped>0){c.stopped-=dt;return}if(c.busted){return}
+ const flee=c.flee;let vt=flee?(me.inCar?105:80):c.maxv;
+ const inter=(c.x%PP<48)&&(c.y%PP<48);const kx=Math.floor(c.x/PP),ky=Math.floor(c.y/PP),id=kx*10+ky;
+ if(!inter){const ed=entryDist(c)-16;if(!flee&&ed>-4&&ed<34){const L=light(Math.floor((c.x+DX[c.dir]*40)/PP),Math.floor((c.y+DY[c.dir]*40)/PP));const st=c.dir%2==0?L.ew:L.ns;if(st=='r'||(st=='y'&&ed>10))vt=Math.min(vt,Math.max(0,(ed-1)*3))}}
+ else if(c.inter!=id){c.inter=id;const opts=[];for(const nd of[c.dir,(c.dir+1)%4,(c.dir+3)%4]){if(nd==0&&kx>=6)continue;if(nd==2&&kx<=0)continue;if(nd==1&&ky>=6)continue;if(nd==3&&ky<=0)continue;opts.push(nd)}
+  let nd=c.dir;if(opts.length){if(flee){opts.sort((a,b)=>{const sa=DX[a]*(c.x-me.x)+DY[a]*(c.y-me.y),sb=DX[b]*(c.x-me.x)+DY[b]*(c.y-me.y);return sb-sa+(R()-.5)*80});nd=opts[0]}else nd=R()<.55&&opts.includes(c.dir)?c.dir:pick(opts)}
+  if(nd!=c.dir){c.turn=nd;c.turnAt=nd%2==0?laneCoord(nd,ky):laneCoord(nd,kx)}else c.turn=null}
+ if(c.turn!=null){const passed=c.dir==0?c.x>=c.turnAt:c.dir==2?c.x<=c.turnAt:c.dir==1?c.y>=c.turnAt:c.y<=c.turnAt;if(passed){if(c.dir%2==0)c.x=c.turnAt;else c.y=c.turnAt;c.dir=c.turn;c.turn=null;if(c.dir%2==0)c.y=laneCoord(c.dir,ky);else c.x=laneCoord(c.dir,kx)}else vt=Math.min(vt,flee?70:30)}
+ // queueing
+ const fx=DX[c.dir],fy=DY[c.dir];let blockedByMe=false;
+ if(!flee){const chk=(o,rng,lat,isMe)=>{const rx=o.x-c.x,ry=o.y-c.y,al=rx*fx+ry*fy,la=Math.abs(rx*fy-ry*fx);if(al>0&&al<rng&&la<lat){vt=Math.min(vt,Math.max(0,(al-rng+8)*3));if(isMe&&al<rng-4)blockedByMe=true}};
+  for(const o of cars)if(o!=c)chk(o,30,9);chk(patrol,30,10,true);if(!me.inCar)chk(me,20,8,true);for(const p of peds)if(!p.inCar&&Math.abs(p.x-c.x)<30&&Math.abs(p.y-c.y)<30)chk(p,20,8)}
+ else{for(const o of cars)if(o!=c&&!o.busted&&Math.hypot(o.x-c.x,o.y-c.y)<16){o.stopped=1.2;spark(o.x,o.y,6);if(R()<.05)SFX.crash()}}
+ if(blockedByMe&&c.v<2){c.blockT+=dt;if(c.blockT>3){c.blockT=-rnd(2,5);if(Math.hypot(c.x-me.x,c.y-me.y)<200){SFX.honk();floatTxt(c.x,c.y-14,pick(['HONK!','MOVE IT!','BEEP BEEP']),'#fff')}}}else if(c.blockT>0)c.blockT=0;
+ c.v+=clamp(vt-c.v,-220*dt,(flee?120:50)*dt);c.x+=fx*c.v*dt;c.y+=fy*c.v*dt;
+ const ta=c.dir*Math.PI/2;c.ang+=angDiff(c.ang,ta)*Math.min(1,dt*8);
+ if(flee&&R()<dt*8)parts.push({x:c.x-fx*12,y:c.y-fy*12,vx:rnd(-5,5),vy:rnd(-5,5),c:'#999',life:.6,s:3});
+ // hits player on foot
+ if(!me.inCar&&Math.hypot(c.x-me.x,c.y-me.y)<10&&c.v>15){hurt(flee?18:6);me.x+=fy*14;me.y-=fx*14;moveCircle(me,0,0,4,solidCity);floatTxt(me.x,me.y-22,'OOF!','#f55');c.v=0}}
+function spark(x,y,n){for(let i=0;i<n;i++)parts.push({x,y,vx:rnd(-60,60),vy:rnd(-60,60),c:pick(['#ff0','#fa0','#fff']),life:rnd(.2,.5),s:1})}
+// ---------- player car
+function updPatrol(dt,iv,boost){const p=patrol;let hx=Math.cos(p.a),hy=Math.sin(p.a);let f=p.vx*hx+p.vy*hy,lat=-p.vx*hy+p.vy*hx;
+ if(iv.m>.12){const ta=Math.atan2(iv.y,iv.x),d=angDiff(p.a,ta);
+  if(Math.abs(d)>2.4&&f<25){f-=iv.m*120*dt;const d2=angDiff(p.a,ta+Math.PI);p.a+=clamp(d2*3,-2.4,2.4)*dt*Math.min(1,Math.abs(f)/25)}
+  else{const thr=iv.m*(boost?280:180)*(Math.abs(d)>1.4?.35:1);f+=thr*dt;p.a+=clamp(d*4.5,-3.4,3.4)*dt*clamp(Math.abs(f)/40,.3,1)}}
+ else f*=Math.pow(.25,dt);
+ f*=Math.pow(boost?.7:.6,dt);f=clamp(f,-70,boost?215:160);lat*=Math.pow(boost?.02:.002,dt);
+ hx=Math.cos(p.a);hy=Math.sin(p.a);p.vx=hx*f-hy*lat;p.vy=hy*f+hx*lat;p.f=f;
+ const pre={x:p.vx,y:p.vy};const hit=moveCircle(p,p.vx*dt,p.vy*dt,6,solidCity);
+ if(hit){const imp=Math.abs(hit&1?pre.x:0)+Math.abs(hit&2?pre.y:0);if(hit&1)p.vx*=-.25;if(hit&2)p.vy*=-.25;if(imp>70&&S.crashT<=0){S.crashT=.4;SFX.crash();vib(50);S.shake=.35;spark(p.x+hx*10,p.y+hy*10,10);hurt(imp/30)}}
+ if(boost&&Math.abs(f)>60&&R()<dt*20)parts.push({x:p.x-hx*12,y:p.y-hy*12,vx:-hx*30+rnd(-10,10),vy:-hy*30+rnd(-10,10),c:pick(['#fa0','#ff0','#888']),life:.35,s:2});
+ for(const c of cars){const d=Math.hypot(c.x-p.x,c.y-p.y);if(d<15){const nx=(p.x-c.x)/(d||1),ny=(p.y-c.y)/(d||1);const rel=Math.hypot(p.vx-DX[c.dir]*c.v,p.vy-DY[c.dir]*c.v);
+  moveCircle(p,nx*(15-d),ny*(15-d),6,solidCity);
+  if(rel>45&&S.crashT<=0){S.crashT=.5;SFX.crash();vib(60);S.shake=.4;spark((p.x+c.x)/2,(p.y+c.y)/2,12);p.vx*=.35;p.vy*=.35;
+   if(c.flee){c.hp=(c.hp||3)-1;floatTxt(c.x,c.y-14,c.hp>0?'CRUNCH! '+c.hp+' MORE':'DISABLED!','#fa0');if(c.hp<=0)bustCar(c)}
+   else if(!c.busted){c.stopped=2;S.score-=15;floatTxt(c.x,c.y-14,'FENDER BENDER -15','#f88');if(R()<.4)floatTxt(c.x,c.y-24,pick(['MY INSURANCE!','SUE YOU!','UNBELIEVABLE']),'#fff')}}}}
+ for(const pd of peds){if(pd.cuffed||pd.inCar||pd.down>0)continue;if(dist(pd,p)<9&&Math.hypot(p.vx,p.vy)>40){pd.down=2;pd.x+=p.vx*.1;pd.y+=p.vy*.1;moveCircle(pd,0,0,3,solidCity);SFX.hurt();vib(40);
+  if(pd.crime&&pd.state=='flee'){floatTxt(pd.x,pd.y-20,'BUMPER TACKLE?!','#fa0');pd.down=3;repChange(-1)}else{repChange(-4);S.score-=40;floatTxt(pd.x,pd.y-20,'OW! -4 REP','#f55');if(S.complainT<=0){S.complainT=10;radio('DISPATCH: Complaint: "a cop hit me with a car." Please stop doing that.','#f88')}}}}}
+function bustCar(c){c.busted=true;c.flee=false;c.v=0;SFX.fanfare();radio('YOU: "Vehicle disabled! Driver is bailing!"','#8cf');const th=mkPed(c.thiefLook);th.x=c.x+12;th.y=c.y;moveCircle(th,0,0,4,solidCity);th.crime='gta';th.name=c.thiefName;th.state='flee';th.down=2.2;th.ft=10;peds.push(th);crimes.forEach(k=>{if(k.car==c){k.car=null;k.ped=th}})}
+function hurt(n){S.hp-=n;S.shake=Math.max(S.shake,.25);vib(30);SFX.hurt()}
+function repChange(n){S.rep=clamp(S.rep+n,0,100)}
+// ---------- crimes
+function colName(c){return({'#c33':'red','#3a3':'green','#cc3':'yellow','#c6c':'purple','#3cc':'teal','#f93':'orange','#eee':'white','#555':'grey','#36c':'blue','#933':'maroon','#7a5':'olive','#f7a':'pink','#fa0':'orange','#468':'navy','#c22':'red','#25b':'blue','#eb2':'yellow','#2a5':'green','#ddd':'white','#93c':'purple','#f80':'orange','#333':'black','#7ad':'sky-blue','#a63':'brown','#5c5':'lime','#e5a':'pink'})[c]||'ugly'}
+function where(o){const b=blockAt(o.x,o.y);return b?(b.type=='park'?'the park':b.type=='park2'?'the plaza':b.name.toLowerCase().replace('&',' & ')):'the edge of town'}
+function spawnCrime(){const hour=S.time/60;const pool=['shoplift','shoplift','jaywalk','jaywalk','litter','noise','vandal','mug','gta'];if(hour>17)pool.push('mug','vandal','gta');const ty=pick(pool);
+ if(ty=='gta'){const c=pick(cars.filter(c=>!c.flee&&!c.busted&&Math.hypot(c.x-me.x,c.y-me.y)>T*8&&Math.hypot(c.x-me.x,c.y-me.y)<T*35));if(!c)return;c.flee=true;c.hp=3;c.thiefLook=randLook();c.thiefName=rname();crimes.push({t:'gta',car:c});
+  radio(`DISPATCH: ${CR.gta.code}! Stolen ${colName(c.col)} ${c.type} near ${where(c)}. Ram it to stop it!`,'#f88');SFX.radio();return}
+ const cand=peds.filter(p=>p.state=='walk'&&!p.crime&&dist(p,me)<T*32&&dist(p,me)>T*4);if(!cand.length)return;const p=pick(cand);p.crime=ty;p.state='crime';p.ct=0;
+ crimes.push({t:ty,ped:p});radio(`DISPATCH: ${CR[ty].code} ${CR[ty].n} near ${where(p)}. Suspect: ${p.name.split(' ')[0]}, ${colName(p.L.shirt)} shirt.`,CR[ty].minor?'#cf8':'#ff8');SFX.radio()}
+function radio(t,c){if(!S)return;if(S.lastMsg==t)return;S.lastMsg=t;S.msgs.unshift({t,c:c||'#7f7',life:10});if(S.msgs.length>3)S.msgs.pop()}
+function floatTxt(x,y,t,c,life){floaters.push({x,y,t,c:c||'#ff0',life:life||1.6,scene:S.scene})}
+function toast(t,ms){const e=$('toast');e.innerHTML=t;e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.opacity=0,ms||1800)}
+
+// ---------- dialog system
+function dlg(title,html,choices,full){S.modal=true;const m=$('modal');m.className=full?'full':'';m.style.display='flex';const b=$('box');b.innerHTML=(title?`<h2>${title}</h2>`:'')+html;
+ for(const c of choices||[]){const e=document.createElement('button');e.innerHTML=c[0];if(c[2])e.className=c[2];e.onclick=ev=>{ev.stopPropagation();SFX.select();vib(8);closeDlg();c[1]&&c[1]()};b.appendChild(e)}b.scrollTop=0;SFX.blip()}
+function closeDlg(){if(S)S.modal=false;$('modal').style.display='none'}
+const say=(who,t)=>`<span class="who">${who}:</span> ${t}`;
+// ---------- cases
+const CASES=[
+ {title:'The Great Donut Heist',scene:'bank',intro:"Someone cleaned out the Bank's employee donut fund: $400 in rolled pennies and one (1) Boston Cream.",thing:'vault door',finale:'"The sprinkles... they CALLED to me."'},
+ {title:'The Glitter & Sons Jewel Job',scene:'jewel',intro:'The "Hope-ish Diamond" (cubic zirconia, huge sentimental value) vanished from its case overnight.',thing:'display case',finale:'"I just wanted something sparkly for my pet rock."'},
+ {title:'The Purloined Poodle',scene:'apart',intro:"The Mayor's poodle, Sir Fluffington III, was dognapped from Apartment 4B. The Mayor is devastated (and up for re-election).",thing:'dog bed',finale:'"He was SO fluffy. I panicked."'},
+ {title:'The Pawn Shop Phantom',scene:'pawn',intro:'Every night something at the Pawn Shop gets replaced with a rubber chicken. The owner is losing it.',thing:'rubber chicken',finale:'"It was ART. A statement. About chickens."'}];
+const ATTR={hair:{label:'Hair',vals:['red','blonde','black','grey'],col:{red:'#c03020',blonde:'#e0c060',black:'#1a1410',grey:'#999'}},height:{label:'Height',vals:['tall','short']},shoes:{label:'Shoes',vals:['boots','sneakers','flip-flops']},habit:{label:'Habit',vals:['cigars','bubble gum','sunflower seeds']},ride:{label:'Ride',vals:['scooter','van','unicycle']}};
+const HABITITEM={cigars:'A soggy cigar butt','bubble gum':'A wad of pink bubble gum','sunflower seeds':'A trail of sunflower seed shells'};
+function clueText(src,cat,v,thing){
+ if(src=='witness'){return{hair:`"I saw 'em running off! Hair was ${v}. Like, REALLY ${v}."`,height:`"They were ${v}. ${v=='tall'?'Hit their head on the awning.':'Had to jump to reach the door handle.'}"`,shoes:`"I heard ${v=='boots'?'clomp clomp clomp':v=='sneakers'?'squeak squeak squeak':'flip flop flip flop'}. ${v}, definitely."`,habit:`"They smelled like ${v}. Strongly."`,ride:`"Got away on a ${v}! ${v=='unicycle'?'Very skilled, honestly.':'Fast, too.'}"`}[cat]}
+ if(src=='scene'){return{hair:`A ${v} hair caught on the ${thing}.`,height:`Scuff marks ${v=='tall'?'high up':'very low'} on the wall. The perp is ${v}.`,shoes:`A muddy ${v} print next to the ${thing}.`,habit:`${HABITITEM[v]} near the ${thing}.`,ride:`Tire marks inside?! From a ${v}.`}[cat]}
+ return{hair:`A ski mask with ${v} hair stuck in it.`,height:`A dropped coat, size ${v=='tall'?'XXL-TALL':'KIDS M'} — perp is ${v}.`,shoes:`A single abandoned ${v=='flip-flops'?'flip-flop':v=='boots'?'boot':'sneaker'}.`,habit:`${HABITITEM[v]}. And a receipt for ${v}.`,ride:`A parking ticket for a ${v}. Hmm.`}[cat]}
+const SUSNAMES=['Big Sal','"Sprinkles" McGee','Prof. Cruller','Lady Fritter','Johnny Two-Cones','Madame Eclair','Knuckles Kowalski','Granny Smash','Dr. Jelly','Tiny Tony','Countess Crumb','Slick Rick Pfeiffer'];
+function newCase(){const tpl=CASES[(SAVE.caseIdx||0)%CASES.length];const cats=shuffle(Object.keys(ATTR)).slice(0,3);
+ const base={};for(const k in ATTR)base[k]=pick(ATTR[k].vals);const names=shuffle(SUSNAMES.slice());
+ const sus=[{name:names[0],attrs:Object.assign({},base)}];
+ for(let i=0;i<3;i++){const a=Object.assign({},base);const cat=cats[i];a[cat]=pick(ATTR[cat].vals.filter(v=>v!=base[cat]));for(const k in ATTR)if(!cats.includes(k)&&R()<.5)a[k]=pick(ATTR[k].vals);sus.push({name:names[i+1],attrs:a})}
+ shuffle(sus);for(const s of sus){const L=randLook();L.hair=ATTR.hair.col[s.attrs.hair];L.hs=ri(1,6);L.hat=null;L.ht=s.attrs.height=='tall'?2:0;L.old=false;s.L=L;s.img=null}
+ const culprit=sus.find(s=>cats.every(c=>s.attrs[c]==base[c]));
+ const srcs=shuffle(['scene','witness','item']).map((src,i)=>({src,cat:cats[i],val:base[cats[i]],found:false}));
+ const C={tpl,sus,culprit,srcs,stage:'investigate',accused:[]};
+ const sb=findBlock(tpl.scene);
+ for(const s of C.srcs){s.text=clueText(s.src,s.cat,s.val,tpl.thing);
+  if(s.src=='scene'){const I=INTERIORS[tpl.scene];s.ix=rnd(3,10)*T;s.iy=rnd(4,7)*T}
+  if(s.src=='item'){let t;do{t=randTile(v=>v==1)}while(Math.hypot(t.x*T-sb.bx*PP,t.y*T-sb.by*PP)<PP*1.5);s.x=(t.x+.5)*T;s.y=(t.y+.5)*T}
+  if(s.src=='witness'){const b=pick(Object.values(blocks).filter(b=>b!=sb&&b.type!='police'));const w=mkPed();const d=doorOf(b.bx,b.by);w.x=d.x+20;w.y=d.y+6;w.state='witness';w.witness=s;w.name=rname();w.L.hat='#fd3';s.ped=w;s.where=b.name;peds.push(w)}}
+ S.case=C}
+function evidenceBoard(){const C=S.case;if(!C){dlg('Evidence Board','<i>Board is empty. Krupke is "working on it."</i>',[['Close']]);return}
+ const known=C.srcs.filter(s=>s.found);
+ let h=`<div style="margin-bottom:6px"><b>${C.tpl.title}</b><br><small>${C.tpl.intro}</small></div><div class="board">`;
+ h+=C.srcs.map(s=>`<div class="note">${s.found?'📌 '+s.text:`❓ <i>${s.src=='scene'?'Search the crime scene: '+findBlock(C.tpl.scene).name:s.src=='witness'?'Find the witness near '+s.where+' (yellow cap)':'Find dropped evidence (yellow ✦ on map)'}</i>`}</div>`).join('');
+ h+='</div><div class="board" style="margin-top:6px">';
+ C.sus.forEach((s,i)=>{if(!s.img)s.img=portraitURL(s.L);const out=known.some(k=>s.attrs[k.cat]!=k.val)||C.accused.includes(i);
+  h+=`<div class="sus ${out?'out':''}"><img src="${s.img}"><br><b>${s.name}</b><br>${Object.keys(ATTR).map(k=>`${ATTR[k].label}: ${s.attrs[k]}`).join('<br>')}<button data-i="${i}">ACCUSE</button></div>`});
+ h+='</div>';
+ dlg('🕵 Evidence Board',h,[['Close']],true);
+ if(C.stage!='investigate'){[...document.querySelectorAll('.sus button')].forEach(b=>b.remove());return}
+ document.querySelectorAll('.sus button').forEach(b=>b.onclick=e=>{e.stopPropagation();closeDlg();accuse(+b.dataset.i)})}
+function accuse(i){const C=S.case,s=C.sus[i];
+ if(s==C.culprit){C.stage='warrant';SFX.fanfare();vib([40,40,80]);S.score+=400;repChange(5);
+  const sb=findBlock(C.tpl.scene);const d=doorOf(sb.bx,sb.by);const p=mkPed(s.L);p.x=d.x;p.y=d.y+10;p.name=s.name;p.crime='warrant';p.state='crime';p.ct=-999;C.perp=p;peds.push(p);crimes.push({t:'warrant',ped:p});
+  dlg('Warrant Issued!',say('SGT KRUPKE',`${s.name}?! The evidence is airtight. +400 pts. Go pick 'em up — last seen near ${sb.name}. Bring 'em in for booking to close the case.`),[['On it! 🚔']]);radio(`DISPATCH: ${CR.warrant.code} Warrant out for ${s.name}, near ${sb.name}. Approach with snacks.`,'#fd6')}
+ else{C.accused.push(i);repChange(-6);SFX.error();vib(120);dlg('Wrong Suspect',say('SGT KRUPKE',`${s.name} has an alibi: ${pick(['they were at a book club for people who hate donuts','they were stuck in a revolving door all night','they were judging a pie contest. Twelve witnesses. All full.','they were literally in our holding cell'])}. -6 rep. Think, detective!`),[['Hmm...']])}}
+function caseClosed(){const C=S.case;C.stage='closed';S.stats.cases++;SAVE.cases=(SAVE.cases||0)+1;SAVE.caseIdx=(SAVE.caseIdx||0)+1;persist();S.score+=1000;repChange(12);SFX.fanfare();vib([60,40,60,40,120]);
+ dlg('🏅 Case Closed: '+C.tpl.title,`${C.culprit.name} confesses: <i>${C.tpl.finale}</i><br><br>+1000 pts, +12 rep. The Chief gives you a coupon for ONE (1) free coffee.`,[['Heck yeah']]);
+ S.caseDelay=25}
+// ---------- scenes
+function enterScene(key){const prev=S.scene;S.cityRet={x:me.x,y:me.y+6};S.scene=key;const d=iDoor(key);me.x=d.x;me.y=d.y;me.dir=-Math.PI/2;trail=[];S.carry.forEach((p,i)=>{p.x=me.x;p.y=me.y+10+i*8});SFX.door();vib(15);
+ cam.x=me.x;cam.y=me.y;
+ if(key=='station'){if(S.carry.length)toast('Take suspects to BOOKING (top-right)');}
+ if(key==S.case?.tpl.scene&&S.case.stage=='investigate')toast('CRIME SCENE: search for evidence ✦')}
+function exitScene(){const key=S.scene;S.scene='city';me.x=S.cityRet.x;me.y=S.cityRet.y+4;me.dir=Math.PI/2;trail=[];S.carry.forEach((p,i)=>{p.x=me.x;p.y=me.y-6});SFX.door();cam.x=me.x;cam.y=me.y;
+ if(key=='station'&&S.held.some(h=>!h.papered))radio("SGT KRUPKE: OFFICER! You've got UNFILED PAPERWORK!",'#fd6')}
+const ENTERABLE={police:'station',donut:'donut',bank:'bank',jewel:'jewel',apart:'apart',pawn:'pawn'};
+// ---------- station actions
+function stationAct(a){
+ if(a=='book'){if(!S.carry.length){dlg('Booking',say('OFFICER DEE',"Nobody to book, hon. Bring me a perp. Or a sandwich."),[['OK']]);return}
+  for(const p of S.carry){S.held.push({p,interrogated:false,papered:false,conf:false});S.booked++;S.score+=50;floatTxt(me.x,me.y-24,'BOOKED +50','#6f6');p.inCar=false;p.follow=false;
+   if(S.case&&S.case.stage=='warrant'&&p==S.case.perp){caseClosed()}}
+  S.carry=[];SFX.stamp();vib(30);layoutHeld();if(S.case?.stage!='closed'||S.modal==false)toast('Booked! Interrogate (optional) then do PAPERWORK');return}
+ if(a=='interrogate'){const h=S.held.find(h=>!h.interrogated);if(!h){dlg('Interrogation Room',"<i>The room is empty. The one-way mirror reflects a tired officer who needs a donut.</i>",[['Leave']]);return}
+  me.x=4*T;me.y=3.9*T;me.dir=-Math.PI/2;h.p.x=4*T;h.p.y=1.7*T;h.p.inRoom='interro';interrogate(h);return}
+ if(a=='paperwork'){const h=S.held.find(h=>!h.papered);if(!h){dlg('Your Desk',"<i>Your inbox is empty. This has never happened before. You feel uneasy.</i>",[['Enjoy it']]);return}me.x=20.8*T;me.y=12.9*T;me.dir=-Math.PI/2;paperwork(h);return}
+ if(a=='board'){evidenceBoard();return}
+ if(a=='frontdesk'){const n=S.held.filter(h=>!h.papered).length;dlg('Front Desk',say('OFFICER DEE',pick(["Krupke's in a mood. Someone ate his labeled yogurt.","Phones are ringing off the hook. Mostly about a cat.","You look tired. Have you tried being less tired?"])+(n?` Also you've got ${n} perp${n>1?'s':''} waiting on paperwork.`:'')+`<br><br>Career rank: <b>${rankOf(SAVE.career+S.score)}</b>`),[['Thanks, Dee'],['Talk to Sergeant Krupke',sergeant]])}
+ if(a=='coffee'){S.st=100;S.boost=30;SFX.donut();floatTxt(me.x,me.y-24,'COFFEE! SPEED UP','#fc6');dlg('',say('COFFEE MACHINE','*gurgle* *hiss* *sad drip*. Burnt. Perfect. Stamina full + 30s speed.'),[['Sip']])}
+ if(a=='evdonut'){if(S.donuts>=6){floatTxt(me.x,me.y-24,'POCKETS FULL','#aaa');return}dlg('Evidence Locker #42',"A box labeled EVIDENCE — DO NOT EAT. It's a dozen glazed.",[['Take one (-2 rep, +1 donut)',()=>{S.donuts++;repChange(-2);SFX.donut();floatTxt(me.x,me.y-24,'+1 DONUT (SHAME)','#f8c')}],['Respect the evidence']])}
+ if(a=='vend'){dlg('Vending Machine',pick(['B4: "Mystery Chips". Out of order since 1997.','It eats your dollar. It always eats your dollar.','A single granola bar spins slowly but never falls.']),[['Shake it',()=>{if(R()<.3){S.hp=Math.min(100,S.hp+15);floatTxt(me.x,me.y-24,'FREE SNACK +15','#6f6')}else{hurt(3);floatTxt(me.x,me.y-24,'IT FELL ON YOU','#f55')}}],['Walk away']])}}
+function sergeant(){const C=S.case;const nr=nextRank(SAVE.career+S.score);
+ dlg("Sgt. Krupke's Office",say('SGT KRUPKE',(C&&C.stage=='investigate'?`About "${C.tpl.title}": ${C.tpl.intro} Clues found: ${C.srcs.filter(s=>s.found).length}/3. Check the board.`:C&&C.stage=='warrant'?`Why are you here? Go arrest ${C.culprit.name}!`:"No open case. Enjoy the quiet. It won't last.")+`<br><br>Rank: <b>${rankOf(SAVE.career+S.score)}</b>${nr?` — ${nr[0]-(SAVE.career+S.score)|0} pts to ${nr[1]}`:' — top brass!'}`),[['Evidence board',evidenceBoard],['Yes, Sarge']])}
+function layoutHeld(){S.held.filter(h=>!h.papered).forEach((h,i)=>{h.p.x=(1.8+i*1.3%6)*T;h.p.y=(11+Math.floor(i/5))*T;h.p.inRoom='cell';h.p.dir=Math.PI/2})}
+// ---------- donut shop
+function donutShop(a){if(a!='buy')return;
+ dlg('Donut Counter',say('GLAZIA',pick(['"Cops eat free. It\'s in the city charter. Probably."','"Back again? You\'re our best customer. Our ONLY customer."','"Try the new Sprinkle Supreme. It has... ambitions."'])),[
+  ['🍩 Glazed — +40 HP, +1 pocket donut',()=>{S.hp=Math.min(100,S.hp+40);S.donuts=Math.min(6,S.donuts+1);ate('GLAZED!')}],
+  ['☕ Coffee — full stamina + 30s speed',()=>{S.st=100;S.boost=30;ate('JAVA!')}],
+  ['🌈 Sprinkle Supreme — full HP & ST, +2 donuts',()=>{S.hp=100;S.st=100;S.donuts=Math.min(6,S.donuts+2);repChange(-1);ate('SUPREME! (-1 REP, LOOKS BAD)')}],
+  ['Ask about gossip',gossip],['Nothing, thanks']])}
+function ate(t){S.stats.donutsEaten++;S.score+=5;SFX.donut();vib(20);floatTxt(me.x,me.y-24,t,'#f8c');for(let i=0;i<14;i++)parts.push({x:me.x,y:me.y-10,vx:rnd(-40,40),vy:rnd(-50,10),c:pick(['#f8c','#ff0','#8ff','#fff','#c97']),life:.8,s:2})}
+function gossip(){const C=S.case;let t;if(C&&C.stage=='investigate'){const s=pick(C.srcs.filter(s=>!s.found).concat(C.srcs));t=s.src=='witness'?`"There's a nosy type in a yellow cap hanging around ${s.where}. Saw something, they say."`:s.src=='scene'?`"Nobody's checked inside ${findBlock(C.tpl.scene).name} properly yet. Amateurs."`:`"Someone dropped something weird on a sidewalk. Look for the sparkle on your map."`}else t=pick(['"Word is Krupke cries at dog food commercials."','"Somebody keeps jaywalking on purpose. For the thrill."','"The mayor has a poodle. A VERY expensive poodle. Just saying."']);
+ dlg('Gossip',say('OLD MAN CRUMBS',t),[['Thanks, Crumbs']])}
+// ---------- crime scene
+function sceneEvidence(){const C=S.case;if(!C||C.stage!='investigate'||C.tpl.scene!=S.scene)return null;return C.srcs.find(s=>s.src=='scene'&&!s.found)}
+function findClue(s){s.found=true;S.score+=150;SFX.success();vib([20,30,20]);const n=S.case.srcs.filter(x=>x.found).length;
+ dlg(`🔍 Clue ${n}/3`,`${s.text}<br><br><small>${ATTR[s.cat].label}: <b>${s.val}</b>. Noted on the evidence board.</small>${n==3?'<br><br><b>All clues found! Go to the Evidence Board at the station (Sergeant\'s office) and ACCUSE.</b>':''}`,[['Noted 📓']]);
+ radio(`YOU: "Found a clue for ${S.case.tpl.title}. ${n}/3."`,'#8cf')}
+function talkWitness(p){const s=p.witness;if(s.found){dlg('Witness',say(p.name,'"I already told you everything! I have a dentist appointment."'),[['Thanks']]);return}
+ if(p.sulk>0){dlg('Witness',say(p.name,'"Hmph. Not talking to YOU."'),[['...']]);return}
+ dlg('Witness',say(p.name,pick(['"Oh! A cop! Finally! I saw something, but..."','"Psst. You working the case? I might know something."','"Are you here about the thing? The THING?"'])),[
+  ['😇 "Take your time. Every detail helps."',()=>{if(R()<.8)witnessTell(p);else{dlg('Witness',say(p.name,'"Hmm... it\'ll come to me. Ask again?"'),[['OK']])}}],
+  ['😠 "Spit it out, I don\'t have all day!"',()=>{if(R()<.45)witnessTell(p);else{p.sulk=15;repChange(-1);dlg('Witness',say(p.name,'"RUDE. I\'m not saying anything for at least 15 seconds."'),[['Oops']])}}],
+  ['🍩 Offer a donut'+(S.donuts?'':' (none left)'),()=>{if(S.donuts>0){S.donuts--;witnessTell(p,true)}else dlg('Witness',say(p.name,'"You offered me... an empty hand?"'),[['Sorry']])}]])}
+function witnessTell(p,donut){const s=p.witness;dlg('Witness',say(p.name,(donut?'"*munch* Okay okay. "':'')+s.text),[['Thanks! 📓',()=>{findClue(s);p.state='walk';p.L.hat=null}]])}
+
 // ---------- interrogation
-const QUIRKS=[{n:'a softie',good:2,bad:-1},{n:'a tough nut',good:-1,bad:2},{n:'a hungry guy',good:1,bad:0,donut:3},{n:'a drama queen',good:1,bad:1}];
-function interrogate(p,done){const q=pick(QUIRKS);let coop=1,anger=0,round=0;const crime=CRIMES[p.crime]||CRIMES.shoplift;
- const lines={good:['"Look, we all make mistakes. Wanna talk about it?"','"I get it. Rough week? Mine too."','"You seem like a decent person under the felony."'],bad:['*SLAMS TABLE* "TALK!"','"Your buddy already ratted you out!" (he did not)','*leans in uncomfortably close* "I have ALL NIGHT."'],donut:'"Donut? Glazed. Still warm."'};
- const reply={up:['"...okay okay, maybe I did a LITTLE crime."','"Fine! But I want it on record I was framed by my own hands."','*sobs* "It was the sprinkles, they made me do it!"'],down:['"I want my lawyer. And a sandwich."','"I know my rights! I watched a TV show once!"','"..." *stares at wall*']};
+const QUIRKS=[{n:'a softie',good:2,bad:-1,donut:2},{n:'a tough nut',good:-.5,bad:2,donut:1},{n:'a hungry type',good:1,bad:0,donut:3.5},{n:'a drama queen',good:1.2,bad:1.2,donut:1},{n:'a chatterbox',good:1.5,bad:.5,donut:1.5}];
+function interrogate(h){const p=h.p,q=pick(QUIRKS);let coop=1,anger=0,round=0;const crime=CR[p.crime]||CR.shoplift;S.inter={p};
+ const G=['"Look, we all make mistakes. Wanna talk?"','"Rough week? Mine too. Tell me about it."','"You seem decent, under all the crime."','"I believe in you. Do you believe in you?"'];
+ const B=['*SLAMS TABLE* "TALK!"','"Your buddy already ratted you out!" (he did not)','*leans in uncomfortably close*','"I have ALL. NIGHT." (shift ends at 8)'];
+ const UP=['"...okay, maybe I did a LITTLE crime."','"Fine! I was framed! By my own hands!"','*sobs* "It was the sprinkles, they MADE me!"','"Can I get that in writing? The donut, I mean."'];
+ const DN=['"I want my lawyer. And a sandwich."','"I know my rights! I watched a TV show once!"','*stares at the wall*','"Is that mirror one-way? Hi mom!"'];
  function step(txt){const meter=`<div>Cooperation</div><div class="meter"><i style="width:${Math.min(100,coop*20)}%;background:#3c6"></i></div><div>Anger</div><div class="meter"><i style="width:${Math.min(100,anger*25)}%;background:#c33"></i></div>`;
-  if(coop>=5){let extra='';if(CASE.active&&!CASE.solved&&R()<.6)extra=`<br><br>🕵 <i>"Also... I heard ${CASE.suspects[CASE.culprit]} was bragging about free donuts for life."</i>`;
-   showModal(`<h2>CONFESSION!</h2>${p.name} sings like a canary. +100 pts, +3 rep.${extra}`,[['To the paperwork... 😩',()=>{S.score+=100;S.rep+=3;done(true)}]]);return}
-  if(anger>=4||round>=5){showModal(`<h2>Lawyered up.</h2>${p.name} says nothing further. ${anger>=4?'You may have yelled a bit much. -2 rep.':'You ran out of time.'}`,[['Ugh. Paperwork.',()=>{if(anger>=4)S.rep-=2;done(false)}]]);return}
-  showModal(`<h2>🗣 INTERROGATION — ${p.name}</h2><i>Charge: ${crime.n}. Your gut says they're ${q.n}.</i><br><br>${txt}<br>${meter}`,[
-   ['😇 Good cop: '+pick(lines.good),()=>{round++;coop+=q.good;if(q.good<0)anger+=0.5;step(q.good>0?pick(reply.up):pick(reply.down))}],
-   ['😠 Bad cop: '+pick(lines.bad),()=>{round++;coop+=q.bad;anger+=1;step(q.bad>0?pick(reply.up):pick(reply.down))}],
-   ['🍩 Offer donut'+(S.donuts?' ('+S.donuts+' left)':' (you have none)'),()=>{round++;if(S.donuts>0){S.donuts--;coop+=q.donut||1.5;anger=Math.max(0,anger-1);step('"...is this... Boston Cream?" *eyes moisten*')}else step('You pat your pockets. No donuts. Awkward silence.')}],
-   ['🤐 Silent treatment (stare)',()=>{round++;if(R()<.4){coop+=2;step('The silence gets to them. "OKAY STOP LOOKING AT ME LIKE THAT."')}else step('They stare back. You both blink. Nobody wins.')}]])}
- step(`${p.name} sits in Room B, sweating. The coffee machine gurgles ominously.`)}
+  if(coop>=5){h.interrogated=true;h.conf=true;S.stats.conf++;let extra='';const C=S.case;
+   if(C&&C.stage=='investigate'){const un=C.srcs.find(s=>!s.found);if(un&&R()<.7)extra=`<br><br>🕵 <i>"Also... about ${C.tpl.title}? ${un.src=='witness'?`There's a witness hanging round ${un.where}. Yellow cap.`:un.src=='scene'?`Check inside ${findBlock(C.tpl.scene).name}. Cops missed something.`:'Somebody dropped something on the sidewalk. It sparkles.'}"</i>`}
+   SFX.success();dlg('Confession!',`${p.name} sings like a canary. +120 pts, +3 rep.${extra}`,[['To the paperwork... 😩',()=>{S.score+=120;repChange(3);S.inter=null}]]);return}
+  if(anger>=4||round>=5){h.interrogated=true;dlg('Lawyered Up',`${p.name} refuses to say more. ${anger>=4?'You may have yelled a bit. -2 rep.':'Out of time.'}`,[['Ugh. Paperwork.',()=>{if(anger>=4)repChange(-2);S.inter=null}]]);return}
+  dlg('🗣 Interrogation — '+p.name,`<i>Charge: ${crime.n}. Your gut says they're ${q.n}. Round ${round+1}/5</i><br><br>${txt}<br>${meter}`,[
+   ['😇 Good cop: '+pick(G),()=>{round++;coop+=q.good;if(q.good<0)anger+=.5;step(say(p.name,q.good>0?pick(UP):pick(DN)))}],
+   ['😠 Bad cop: '+pick(B),()=>{round++;coop+=q.bad;anger+=1;S.shake=.2;vib(40);SFX.stamp();step(say(p.name,q.bad>0?pick(UP):pick(DN)))}],
+   ['🍩 Offer donut'+(S.donuts?` (${S.donuts})`:' (none)'),()=>{round++;if(S.donuts>0){S.donuts--;coop+=q.donut;anger=Math.max(0,anger-1);step(say(p.name,'"...is this... Boston Cream?" *eyes moisten*'))}else step('<i>You pat your pockets. No donuts. Awkward.</i>')}],
+   ['🤐 Silent stare',()=>{round++;if(R()<.4){coop+=2;step(say(p.name,'"OKAY STOP LOOKING AT ME LIKE THAT."'))}else step('<i>They stare back. You both blink. Nobody wins.</i>')}],
+   ['🚪 Skip (no bonus)',()=>{h.interrogated=true;S.inter=null}]])}
+ step(`<i>${p.name} sits across the table, sweating. The lamp buzzes. The coffee machine gurgles ominously.</i>`)}
 // ---------- paperwork
-function typo(s){const a=s.split('');const i=ri(1,a.length-2);const m=ri(0,2);if(m==0){[a[i],a[i+1]]=[a[i+1],a[i]]}else if(m==1)a[i]=pick('aeiouxzq'.split(''));else a.splice(i,0,a[i]);return a.join('')}
-function paperwork(p,done){let errors=0,stage=0;const crime=CRIMES[p.crime]||CRIMES.shoplift;const t0=performance.now();
- const forms=['Form 27-B/6 (Arrest)','Form 99-Q (Feelings About Arrest)','Form 12-Z (Request For More Forms)'];
- function next(){stage++;if(stage==1){let opts=[p.name,typo(p.name),typo(p.name),typo(p.name)].sort(()=>R()-.5);
-   showModal(`<h2>📝 ${forms[0]}</h2>Box 1: Suspect's full legal name (spelled CORRECTLY, Officer):`,opts.map(o=>[o,()=>{if(o!=p.name){errors++;floatTxt(me.x,me.y,'TYPO!','#f55')}next()}]))}
-  else if(stage==2){const codes=Object.values(CRIMES).map(c=>c.code+' – '+c.n);codes.push('10-WTF – Unspecified Weirdness');
-   showModal(`<h2>📝 ${forms[0]}</h2>Box 7c: Select the crime code. (Sergeant Krupke is watching.)`,codes.sort(()=>R()-.5).map(c=>[c,()=>{if(!c.startsWith(crime.code+' '))errors++;next()}]))}
-  else if(stage==3){showModal(`<h2>📝 ${forms[1]}</h2>On a scale of 1–5, how did this arrest make you feel?`,[['1 – Nothing. I am the law.',next],['3 – Mild indigestion.',next],['5 – I need a donut.',()=>{next()}],['Leave blank',()=>{errors++;next()}]])}
-  else if(stage==4){let stamps=0;const need=3;const st0=performance.now();
-   const draw=()=>showModal(`<h2>📝 ${forms[2]}</h2>STAMP IN TRIPLICATE! Fast, before the copier jams.<br><br><div style="font-size:32px;text-align:center">${'✅'.repeat(stamps)}${'⬜'.repeat(need-stamps)}</div>`,[['🔨 STAMP',()=>{stamps++;if(stamps>=need){if(performance.now()-st0>4000){errors++;floatTxt(me.x,me.y,'COPIER JAMMED','#f55')}next()}else draw()}]]);draw()}
-  else{const secs=((performance.now()-t0)/1000)|0;const pts=Math.max(0,crime.pts-errors*30)+(secs<15?50:0);S.score+=pts;S.rep+=errors?-errors:2;
-   showModal(`<h2>${errors?'📎 Paperwork filed (badly)':'🏅 Flawless paperwork!'}</h2>Time: ${secs}s · Errors: ${errors}<br>${errors?'The Sergeant sighs so hard his mustache moves. ':'The Sergeant nods. Once. A rare honor. '}+${pts} pts<br><br><i>${pick(['Only 46 more forms till retirement.','The coffee is cold. It was always cold.','Your pen dies. Another pen dies. All pens die.'])}</i>`,[['Back to the beat 🚔',()=>{closeModal();done()}]])}}
- showModal(`<h2>🗂 BOOKING: ${p.name}</h2>Charge: ${crime.n}. Before you can go, the city requires ${forms.length} forms. Typos will be penalized. Speed is rewarded.`,[['Begin the suffering',next]])}
-function book(p){S.arrests++;interrogate(p,()=>paperwork(p,()=>{peds=peds.filter(x=>x!=p);peds.push(mkPed());me.carry=null;}))}
-// ---------- case
-function caseSolve(){showModal(`<h2>🕵 THE GREAT DONUT HEIST</h2>Someone robbed the Bank's vault... of the employee donut fund. You have all 3 clues:<ul>${CASE.clues.map(c=>'<li>'+c.text+'</li>').join('')}</ul>Who's the culprit?`,CASE.suspects.map((s,i)=>[s,()=>{
- if(i==CASE.culprit){CASE.solved=true;S.score+=1000;S.rep+=15;showModal(`<h2>🎉 CASE CLOSED!</h2>${s} confesses: "The sprinkle mask... it was too fabulous not to wear." +1000 pts, +15 rep. The Chief gives you a coupon for ONE free coffee.`,[['Heck yeah',closeModal]])}
- else{S.rep-=5;showModal(`<h2>❌ Wrong suspect</h2>${s} has an airtight alibi (they were at a book club for people who hate donuts). -5 rep. Think harder, detective.`,[['Hmm...',closeModal]])}}]))}
-// ---------- update
-let spawnT=4,last=performance.now();
-function moveEnt(e,dx,dy,r){const nx=e.x+dx,ny=e.y+dy;let hit=false;
- if(!solidAt(nx-r,e.y-r)&&!solidAt(nx+r,e.y-r)&&!solidAt(nx-r,e.y+r)&&!solidAt(nx+r,e.y+r))e.x=nx;else hit=true;
- if(!solidAt(e.x-r,ny-r)&&!solidAt(e.x+r,ny-r)&&!solidAt(e.x-r,ny+r)&&!solidAt(e.x+r,ny+r))e.y=ny;else hit=true;return hit}
+function typo(s){const a=s.split('');const i=ri(1,a.length-2);const m=ri(0,3);if(m==0)[a[i],a[i+1]]=[a[i+1],a[i]];else if(m==1)a[i]=pick('aeiouxzqk'.split(''));else if(m==2)a.splice(i,0,a[i]);else a.splice(i,1);return a.join('')}
+function paperwork(h){const p=h.p;let errors=0,stage=0;const crime=CR[p.crime]||CR.shoplift;const t0=performance.now();
+ const forms=['Form 27-B/6 (Arrest Report)','Form 99-Q (Feelings About Arrest)','Form 12-Z (Request For More Forms)','Form 404 (Form Not Found)'];
+ const hdr=()=>`<small>⏱ ${((performance.now()-t0)/1000|0)}s · ❌ ${errors}</small><br>`;
+ function next(){stage++;
+  if(stage==1){const opts=[p.name];while(opts.length<4){const t=typo(p.name);if(!opts.includes(t))opts.push(t)}shuffle(opts);
+   dlg('📝 '+forms[0],hdr()+'Box 1: Suspect\'s full legal name, spelled <b>correctly</b>:',opts.map(o=>[o,()=>{if(o!=p.name){errors++;SFX.error();floatTxt(me.x,me.y-24,'TYPO!','#f55')}else SFX.type();next()}]))}
+  else if(stage==2){const codes=Object.values(CR).map(c=>c.code+' – '+c.n);codes.push('10-WTF – Unspecified Weirdness','10-4 – Copy That');
+   dlg('📝 '+forms[0],hdr()+'Box 7c: Select the crime code. Sgt. Krupke is watching.',shuffle(codes).slice(0,5).concat([crime.code+' – '+crime.n]).filter((v,i,a)=>a.indexOf(v)==i).sort(()=>R()-.5).map(c=>[c,()=>{if(!c.startsWith(crime.code+' ')){errors++;SFX.error()}next()}]))}
+  else if(stage==3){const tm=S.time;const real=`${String(tm/60|0).padStart(2,'0')}:${String(tm%60|0).padStart(2,'0')}`;const fake=[real,`${String((tm/60|0)+1).padStart(2,'0')}:${String(tm%60|0).padStart(2,'0')}`,`${String(tm/60|0).padStart(2,'0')}:${String((tm+17)%60|0).padStart(2,'0')}`,'25:61'];
+   dlg('📝 '+forms[3],hdr()+'Box 0: Current time (see your watch, top-left):',shuffle(fake).map(f=>[f,()=>{if(f!=real){errors++;SFX.error()}next()}]))}
+  else if(stage==4){dlg('📝 '+forms[1],hdr()+'On a scale of 1–5, how did this arrest make you feel?',[['1 – Nothing. I am the law.',next],['3 – Mild indigestion.',next],['5 – I need a donut.',next],['Leave blank',()=>{errors++;next()}]])}
+  else if(stage==5){let stamps=0;const need=3,st0=performance.now();
+   const draw=()=>dlg('📝 '+forms[2],hdr()+`STAMP IN TRIPLICATE! Fast, before the copier jams!<br><div style="font-size:30px;text-align:center">${'✅'.repeat(stamps)}${'⬜'.repeat(need-stamps)}</div>`,[['🔨 STAMP!',()=>{stamps++;SFX.stamp();vib(25);S.shake=.1;if(stamps>=need){if(performance.now()-st0>3500){errors++;SFX.error();floatTxt(me.x,me.y-24,'COPIER JAMMED','#f55')}next()}else draw()}]]);draw()}
+  else{const secs=(performance.now()-t0)/1000|0;let pts=Math.max(0,crime.pts-errors*30)+(secs<20?50:0)+(h.conf?60:0);S.score+=pts;repChange(errors?-errors:2);S.arrests++;h.papered=true;S.papers++;if(!errors)S.stats.perfectForms++;
+   SAVE.arrests=(SAVE.arrests||0)+1;persist();if(!errors)SFX.success();
+   p.inRoom=null;peds=peds.filter(x=>x!=p);peds.push(mkPed());layoutHeld();
+   dlg(errors?'📎 Filed (badly)':'🏅 Flawless Paperwork!',`Time: ${secs}s · Errors: ${errors}${h.conf?' · Confession bonus':''}<br>${errors?'The Sergeant sighs so hard his mustache moves.':'The Sergeant nods. Once. A rare honor.'} <b>+${pts} pts</b><br><br><i>${pick(['Only 46 more forms till retirement.','The coffee is cold. It was always cold.','Your pen dies. Every pen dies.','The printer says PC LOAD LETTER. You do not know what that means.'])}</i>`,[['Back to the beat 🚔']])}}
+ dlg('🗂 Paperwork: '+p.name,`Charge: ${crime.n}. The city requires ${forms.length} forms. Typos are penalized. Speed is rewarded.`,[['Begin the suffering',next]])}
+
+// ---------- interaction resolution
+function nearestPed(r,f){let b=null,bd=r;for(const p of peds){if(p.inCar||p.inRoom)continue;if(f&&!f(p))continue;const d=dist(p,me);if(d<bd){bd=d;b=p}}return b}
+function getAction(){
+ if(S.scene!='city'){const objs=IOBJ[S.scene]||[];let best=null,bd=26;
+  const ev=sceneEvidence();if(ev&&Math.hypot(ev.ix-me.x,ev.iy-me.y)<22)return{label:'SEARCH',fn:()=>findClue(ev)};
+  for(const o of objs){if(!o.act)continue;const cx=clamp(me.x,o.x*T,(o.x+o.w)*T),cy=clamp(me.y,o.y*T,(o.y+o.h)*T);const d=Math.hypot(cx-me.x,cy-me.y);if(d<bd){bd=d;best=o}}
+  if(best)return{label:best.label,fn:()=>S.scene=='station'?stationAct(best.act):S.scene=='donut'?donutShop(best.act):0};
+  if(S.scene=='donut'&&Math.hypot(me.x-10.7*T,me.y-5.2*T)<30)return{label:'TALK',fn:gossip};
+  if(S.scene=='station'&&Math.hypot(me.x-12.5*T,me.y-1.6*T)<34)return{label:'SERGEANT',fn:sergeant};
+  if(['bank','jewel','apart','pawn'].includes(S.scene)&&Math.hypot(me.x-4*T,me.y-1.8*T)<30)return{label:'TALK',fn:ownerTalk};
+  return{label:'SHOUT',fn:shout}}
+ if(me.inCar)return{label:S.siren?'SIREN OFF':'SIREN',fn:()=>{S.siren=!S.siren;SFX.blip()}};
+ const downed=nearestPed(18,p=>p.down>0&&p.crime&&!p.cuffed);
+ if(downed)return CR[downed.crime].minor?{label:'TICKET',fn:()=>ticket(downed)}:{label:'CUFF',fn:()=>cuff(downed)};
+ const perp=nearestPed(26,p=>p.crime&&!p.cuffed&&p.state!='witness');
+ if(perp){if(CR[perp.crime].minor&&perp.state=='crime'&&dist(perp,me)<22)return{label:'TICKET',fn:()=>ticket(perp)};return{label:'TACKLE',fn:()=>tackle(perp)}}
+ for(const k in blocks){const b=blocks[k];if(!ENTERABLE[b.type])continue;const d=doorOf(b.bx,b.by);if(Math.hypot(d.x-me.x,d.y-me.y)<16)return{label:'ENTER',fn:()=>enterScene(ENTERABLE[b.type])}}
+ const C=S.case;if(C&&C.stage=='investigate')for(const s of C.srcs)if(s.src=='item'&&!s.found&&Math.hypot(s.x-me.x,s.y-me.y)<18)return{label:'PICK UP',fn:()=>findClue(s)};
+ const w=nearestPed(24,p=>p.state=='witness');if(w)return{label:'TALK',fn:()=>talkWitness(w)};
+ const pd=nearestPed(20,p=>!p.crime);if(pd)return{label:'TALK',fn:()=>chat(pd)};
+ return{label:'FREEZE!',fn:shout}}
+function getB(){if(S.scene!='city')return{label:'—',fn:()=>{}};if(me.inCar)return{label:'EXIT',fn:exitCar};if(dist(me,patrol)<28)return{label:'CAR',fn:enterCar};return{label:'CAR',fn:()=>{floatTxt(me.x,me.y-24,'CAR TOO FAR (BLUE ON MAP)','#aaa');SFX.error()},dim:1}}
+function ownerTalk(){const n={bank:'BANK MANAGER',jewel:'MR. GLITTER',apart:'THE MAYOR',pawn:'PAWN SHOP OWNER'}[S.scene];const C=S.case;
+ dlg('',say(n,C&&C.tpl.scene==S.scene&&C.stage=='investigate'?pick(['"Please, officer, find who did this!"','"Look around! The evidence is RIGHT there somewhere!"']):pick(['"Business is fine. Suspiciously fine."','"Thanks for stopping by, officer. Want a lollipop?"','"Are you here to buy something? No? Okay."'])),[['Bye']])}
+function chat(p){p.state='idle';p.wait=2;const C=S.case;let t=pick(['"Nice day, officer."','"I didn\'t do it! ...Do what?"','"Is that a donut crumb on your badge?"','"My cousin is a lawyer. Sort of."','"Have you tried the new maple bar?"','"Can you arrest my landlord?"','"I pay your salary! Well, 0.0001% of it."','"Love the hat."']);
+ const cr=crimes.find(k=>k.ped&&k.ped.state=='crime');if(cr&&R()<.4)t=`"Saw something shady near ${where(cr.ped)}!"`;
+ floatTxt(p.x,p.y-24,t.length>34?t.slice(0,33)+'"':t,'#fff',2.4);SFX.blip()}
+function shout(){SFX.honk();vib(15);floatTxt(me.x,me.y-24,pick(['FREEZE!','STOP! POLICE!','HALT!','HEY YOU!']),'#ff6');
+ for(const p of peds)if(p.state=='flee'&&dist(p,me)<T*7&&R()<.35){p.state='freeze';p.ft=1.6;floatTxt(p.x,p.y-24,'*FREEZES*','#6ff')}}
+function tackle(p){if(S.st<12){floatTxt(me.x,me.y-24,'TOO TIRED... DONUT?','#aaa');SFX.error();return}S.st-=12;me.tackle=.22;me.dir=Math.atan2(p.y-me.y,p.x-me.x);
+ const d=dist(p,me);if(d<19||R()<.45){p.down=p.state=='flee'?2.6:3.2;p.ft=(p.ft||0)+4;S.shake=.25;SFX.tackle();vib(70);spark(p.x,p.y-4,6);for(let i=0;i<8;i++)parts.push({x:p.x,y:p.y,vx:rnd(-30,30),vy:rnd(-30,30),c:'#cbb',life:.5,s:2});floatTxt(p.x,p.y-24,CR[p.crime].minor?'TACKLED! A: TICKET':'TACKLED! A: CUFF','#6f6')}
+ else{SFX.whiff();floatTxt(me.x,me.y-24,'*WHIFF*','#aaa');if(p.state=='crime')startFlee(p)}}
+function cuff(p){if(S.carry.length>=2){floatTxt(me.x,me.y-24,'HANDS FULL! BOOK THEM FIRST','#aaa');SFX.error();return}
+ p.cuffed=true;p.down=0;p.state='cuffed';p.follow=true;S.carry.push(p);S.score+=50;SFX.cuff();vib([30,20,30]);floatTxt(p.x,p.y-24,'CUFFED! +50','#6f6');
+ radio(`YOU: "Suspect ${p.name} in custody. Bringing them in."`,'#8cf');crimes=crimes.filter(k=>k.ped!=p);if(p.victim){p.victim.state='walk';p.victim=null}
+ for(let i=0;i<12;i++)parts.push({x:p.x,y:p.y-10,vx:rnd(-50,50),vy:rnd(-60,0),c:pick(['#6f6','#ff0','#fff']),life:.7,s:2})}
+function ticket(p){const c=CR[p.crime];S.tickets++;S.score+=c.pts;repChange(1);SFX.ticket();vib(20);
+ floatTxt(p.x,p.y-24,`TICKET! +${c.pts}`,'#6f6');floatTxt(p.x,p.y-34,pick(['"THIS IS AN OUTRAGE!"','"Can I pay in exposure?"','"I\'ll frame it."','"Ugh, FINE."']),'#fff',2.2);
+ crimes=crimes.filter(k=>k.ped!=p);p.crime=null;p.down=0;p.state='walk';p.jw=null;if(p.victim){p.victim.state='walk';p.victim=null}}
+function enterCar(){me.inCar=true;SFX.door();vib(15);for(const p of S.carry){p.inCar=true}if(S.carry.length)floatTxt(me.x,me.y-24,'PERP IN BACK SEAT','#8cf')}
+function exitCar(){const p=patrol;const sp=Math.hypot(p.vx,p.vy);if(sp>50){floatTxt(me.x,me.y-24,'SLOW DOWN FIRST','#aaa');return}
+ me.inCar=false;S.siren=false;sirenUpdate(false);p.vx=p.vy=0;let ok=false;for(const a of[Math.PI/2,-Math.PI/2,Math.PI,0]){const x=p.x+Math.cos(p.a+a)*16,y=p.y+Math.sin(p.a+a)*16;if(!solidCity(x,y)){me.x=x;me.y=y;ok=true;break}}if(!ok){me.x=p.x;me.y=p.y}
+ trail=[];S.carry.forEach((c,i)=>{c.inCar=false;c.x=p.x;c.y=p.y});SFX.door()}
+// ---------- main update
 function update(dt){
- S.time+=dt*1.0; // 1 game min / sec
- if(S.time>=16*60&&!S.over){S.over=true;showModal(`<h2>🌇 END OF SHIFT</h2>Score: ${S.score|0}<br>Arrests: ${S.arrests}<br>Reputation: ${S.rep|0}<br>Case: ${CASE.solved?'SOLVED 🏅':'Unsolved'}<br><br>${S.rep>70?'Commissioner material!':S.rep>40?'Decent cop. Average mustache.':'Desk duty. Forever.'}`,[['New shift',()=>location.reload()]]);return}
- const iv=inputVec();const sprint=(keys.ShiftLeft||keys.ShiftRight||btnS)&&S.st>1;
- if(pressB){pressB=false;if(me.inCar){me.inCar=false;me.x=patrol.x+Math.cos(patrol.a+Math.PI/2)*T*1.2;me.y=patrol.y+Math.sin(patrol.a+Math.PI/2)*T*1.2;if(solidAt(me.x,me.y)){me.x=patrol.x;me.y=patrol.y}patrol.v=0}else if(dist(me,patrol)<T*2.2){me.inCar=true;radio('You: "Unit 12, back in the cruiser."','#8cf')}else floatTxt(me.x,me.y-10,'Car too far','#aaa')}
- if(me.inCar){const p=patrol;if(iv.m>0.15){const ta=Math.atan2(iv.y,iv.x);let d=ta-p.a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
-   if(Math.abs(d)>2.4&&p.v<20){p.v-=60*dt}else{p.a+=clamp(d,-3*dt,3*dt);p.v+=iv.m*140*dt}}
-  p.v*=Math.pow(0.4,dt);p.v=clamp(p.v,-40,sprint?190:150);
-  if(moveEnt(p,Math.cos(p.a)*p.v*dt,Math.sin(p.a)*p.v*dt,5)){if(Math.abs(p.v)>60){S.shake=.3;S.hp-=2}p.v*=-0.3}
-  me.x=p.x;me.y=p.y;p.siren=S.siren;
-  for(const pd of peds)if(!pd.cuffed&&dist(pd,p)<9&&Math.abs(p.v)>40){pd.x+=Math.cos(p.a)*12;pd.y+=Math.sin(p.a)*12;if(!pd.hitT){S.rep-=3;S.score-=50;floatTxt(pd.x,pd.y,'OW! -3 rep','#f55');radio('DISPATCH: Unit 12, citizen complaint: "a cop hit me with a car." Please don\'t.','#f88');pd.hitT=2}}
- }else{const sp=(sprint?78:44)*(S.st<10?0.6:1);if(sprint&&iv.m>.1)S.st-=14*dt;else S.st=Math.min(100,S.st+4*dt);
-  if(me.tackle>0){me.tackle-=dt;moveEnt(me,Math.cos(me.dir)*120*dt,Math.sin(me.dir)*120*dt,4)}
-  else if(iv.m>.1){me.dir=Math.atan2(iv.y,iv.x);moveEnt(me,iv.x*sp*dt,iv.y*sp*dt,4);me.anim+=dt*(sprint?14:8)}}
+ S.time+=dt;if(S.boost>0)S.boost-=dt;if(S.complainT>0)S.complainT-=dt;if(S.crashT>0)S.crashT-=dt;
+ if(S.time>=20*60){endShift();return}
+ smoothJoy(dt);const iv=inputVec();const running=(keys.ShiftLeft||keys.ShiftRight||IN.run);
+ const act=getAction(),bAct=getB();S.act=act;S.bAct=bAct;
+ if(IN.pressA){IN.pressA=false;act.fn();if(S.modal)return}
+ if(IN.pressB){IN.pressB=false;bAct.fn()}
+ // player
+ if(me.inCar&&S.scene=='city'){updPatrol(dt,iv,running);me.x=patrol.x;me.y=patrol.y}
+ else{const canRun=running&&S.st>1;const sp=(canRun?82:46)*(S.st<10?0.65:1)*(S.boost>0?1.25:1);
+  if(canRun&&iv.m>.1)S.st-=13*dt;else S.st=Math.min(100,S.st+(iv.m>.1?5:9)*dt);
+  const solid=S.scene=='city'?solidCity:(x,y)=>iSolid(S.scene,x,y);
+  if(me.tackle>0){me.tackle-=dt;moveCircle(me,Math.cos(me.dir)*150*dt,Math.sin(me.dir)*150*dt,4,solid)}
+  else if(iv.m>.08){me.dir=Math.atan2(iv.y,iv.x);moveCircle(me,iv.x*sp*dt,iv.y*sp*dt,4,solid);const pa=me.anim;me.anim=(me.anim<0?0:me.anim)+dt*sp*.18;if((pa|0)!=(me.anim|0)&&(me.anim|0)%2==0)SFX.step();if(canRun&&R()<dt*10)parts.push({x:me.x,y:me.y,vx:rnd(-8,8),vy:-6,c:'#bbb',life:.35,s:2})}
+  else me.anim=-1;
+  if(S.scene!='city'){const I=INTERIORS[S.scene];const ty=Math.floor((me.y+4)/T),tx=Math.floor(me.x/T);if((I.grid[ty]||'')[tx]=='D')exitScene()}}
  S.st=clamp(S.st,0,100);
- // action
- if(pressA){pressA=false;action()}
- // peds
- for(const p of peds){if(p.hitT)p.hitT=Math.max(0,p.hitT-dt);
-  if(p.cuffed){if(p.follow){const d=dist(p,me);if(me.inCar){p.x=patrol.x;p.y=patrol.y;p.inCar=true}else{p.inCar=false;if(d>12){p.x+=(me.x-p.x)/d*60*dt;p.y+=(me.y-p.y)/d*60*dt}}}continue}
-  if(p.down>0){p.down-=dt;if(p.down<=0&&!p.cuffed){p.state='flee';floatTxt(p.x,p.y,'*wriggles free*','#fa0')}continue}
-  if(p.state=='crime'){p.ct+=dt;if(p.crime=='jaywalk'&&p.tx){const d=Math.hypot(p.tx-p.x,p.ty-p.y);if(d>3){p.x+=(p.tx-p.x)/d*15*dt;p.y+=(p.ty-p.y)/d*15*dt}}
-   if(p.crime=='vandal'&&R()<dt*3)parts.push({x:p.x+rnd(-6,6),y:p.y-4+rnd(-4,4),vx:0,vy:0,c:pick(['#f0f','#0ff','#ff0']),life:20,paint:1});
-   if(p.crime=='mug'&&p.ct>1&&!p.victim){const v=peds.find(q=>q!=p&&!q.crime&&dist(q,p)<T*6);if(v){p.victim=v;v.state='scared';floatTxt(v.x,v.y,'HELP!','#f55')}}
-   if(dist(p,me)<T*(me.inCar&&S.siren?9:5)&&R()<CRIMES[p.crime].flee*dt*3){p.state='flee';floatTxt(p.x,p.y,pick(['RUN!','Not today, pig!','Yikes!','*yeet*']),'#fa0')}
-   if(p.ct>60){p.crime=null;p.state='walk';S.rep-=2;radio('DISPATCH: Suspect got away. The public is "mildly disappointed".','#f88')}continue}
-  if(p.state=='flee'){const d=dist(p,me)||1;let fx=(p.x-me.x)/d,fy=(p.y-me.y)/d;const spd=(me.inCar?62:56)*(p.tired?0.6:1);p.tired=(p.tired||0)+dt*0.03>1;p.ft=(p.ft||0)+dt;
-   if(moveEnt(p,fx*spd*dt+rnd(-1,1),fy*spd*dt+rnd(-1,1),4)){const a=Math.atan2(fy,fx)+(R()<.5?1.6:-1.6);moveEnt(p,Math.cos(a)*spd*dt,Math.sin(a)*spd*dt,4)}
-   if(d>T*30){p.crime=null;p.state='walk';p.ft=0;S.rep-=3;radio('DISPATCH: You lost the suspect. Sergeant says "cardio, officer."','#f88')}continue}
-  if(p.state=='scared'){p.t-=dt;if(p.t<-4)p.state='walk';continue}
-  p.t-=dt;if(p.t<=0){p.t=rnd(1,4);const dirs=[[1,0],[-1,0],[0,1],[0,-1],[0,0]];const d=pick(dirs);p.dx=d[0];p.dy=d[1]}
-  const nx=p.x+p.dx*p.spd*dt,ny=p.y+p.dy*p.spd*dt;const tt=tile(nx/T,ny/T);if(tt==1||tt==3){p.x=nx;p.y=ny}else p.t=0;}
- // cars
- for(const c of cars){if(c.stopped>0){c.stopped-=dt;continue}
-  if(c.flee){const d=dist(c,me);c.v=me.inCar?100:70;if(d>T*45&&!c.busted){c.flee=false;c.v=45;S.rep-=4;radio('DISPATCH: Stolen vehicle lost. Insurance company sends a frowny face.','#f88');crimes=crimes.filter(k=>k.car!=c)}}
-  if(c.busted)continue;
-  const tx=Math.floor(c.x/T),ty=Math.floor(c.y/T),cx=(tx%P==1),cy=(ty%P==1);const id=tx*1000+ty;
-  if(cx&&cy&&id!=c.lastI){const fx=(tx+.5)*T,fy=(ty+.5)*T;if(Math.hypot(fx-c.x,fy-c.y)<4){c.lastI=id;c.x=fx;c.y=fy;
-    let opts=[0,Math.PI/2,Math.PI,-Math.PI/2].filter(a=>{const nx=tx+Math.round(Math.cos(a))*3,ny=ty+Math.round(Math.sin(a))*3;return tile(nx,ny)==0&&Math.abs(Math.cos(a-c.a)+1)>0.01});
-    if(c.flee){opts.sort((a,b)=>{const da=Math.hypot(c.x+Math.cos(a)*50-me.x,c.y+Math.sin(a)*50-me.y),db=Math.hypot(c.x+Math.cos(b)*50-me.x,c.y+Math.sin(b)*50-me.y);return db-da});if(opts.length)c.a=opts[0]}else if(opts.length)c.a=pick(opts)}}
-  // brake for player car / peds
-  let v=c.v;const ahead={x:c.x+Math.cos(c.a)*14,y:c.y+Math.sin(c.a)*14};if(!c.flee){if(dist(ahead,me)<12||peds.some(p=>dist(p,ahead)<8))v=0}
-  const nx=c.x+Math.cos(c.a)*v*dt,ny=c.y+Math.sin(c.a)*v*dt;if(tile(nx/T,ny/T)==2){c.a+=Math.PI;c.lastI=-1}else{c.x=nx;c.y=ny}
-  // ped hit by stolen car: knocked
-  if(!me.inCar&&dist(c,me)<9&&v>20){S.hp-=c.flee?15:5;S.shake=.3;me.x-=Math.cos(c.a)*-14;me.y+=Math.sin(c.a)*14;floatTxt(me.x,me.y,'OOF','#f55');if(!c.flee)c.stopped=1.5}
-  if(me.inCar&&dist(c,patrol)<12){if(c.flee&&Math.abs(patrol.v)>50){c.hp=(c.hp||3)-1;S.shake=.4;patrol.v*=0.3;floatTxt(c.x,c.y,'CRUNCH!','#fa0');if(c.hp<=0){c.busted=true;c.flee=false;radio('You: "Vehicle disabled! Hop out and cuff the driver!"','#8cf');const th=c.thief;th.x=c.x+8;th.y=c.y;th.state='flee';th.down=1.5;th.tired=1;peds.push(th);c.crimeDone=true}}
-   else{const d=dist(c,patrol)||1;patrol.x+=(patrol.x-c.x)/d*2;patrol.y+=(patrol.y-c.y)/d*2;if(Math.abs(patrol.v)>40){patrol.v*=-0.4;if(!c.flee){S.score-=10;floatTxt(c.x,c.y,'Fender bender -10','#f88')}}}}}
- cars=cars.filter(c=>!(c.busted&&dist(c,me)>T*30));while(cars.length<16)cars.push(mkCar());
- // auto-cuff check for busted, mugging damage
- for(const p of peds)if(p.crime=='mug'&&p.state=='flee'&&dist(p,me)<10&&!me.inCar&&R()<dt){S.hp-=8;floatTxt(me.x,me.y,'*purse swing* -8','#f55')}
- // book at station
- if(me.carry&&dist(me,STATION)<T*1.8&&!S.modal){const p=me.carry;p.follow=false;book(p)}
- // clues
- for(const c of CASE.clues)if(!c.got&&dist(c,me)<T*1.2&&!me.inCar){c.got=true;CASE.found++;S.score+=150;showModal(`<h2>🔍 Clue ${CASE.found}/3</h2>${c.text}${CASE.found==3?'<br><br><b>All clues found! Return to the POLICE station and press A at the door to name the culprit.</b>':''}`,[['Noted 📓',closeModal]])}
- // spawn crimes
- spawnT-=dt;if(spawnT<=0){spawnT=rnd(9,16);if(crimes.filter(c=>c.ped?c.ped.crime:c.car&&c.car.flee).length<3)spawnCrime()}
- crimes=crimes.filter(c=>c.ped?(c.ped.crime&&!c.ped.cuffed&&peds.includes(c.ped)):(c.car.flee||c.car.busted&&!c.car.crimeDone));
- // random banter
- if(R()<dt/25)radio(pick(['DISPATCH: Cat stuck in tree on 5th. Again. It\'s the same cat.','DISPATCH: Reports of a man "looking suspicious". He is just tall.','DISPATCH: Reminder: the break room microwave is NOT evidence.','DISPATCH: Code 10-DONUT, Sergeant wants a dozen. Glazed.','DISPATCH: Noise complaint: a guy practicing the bagpipes. Respond with empathy.']),'#9c9');
- // hp/stamina
- S.hp=Math.min(100,S.hp+dt*0.5);if(S.hp<=0){S.hp=60;S.score-=200;S.rep-=5;me.carry=null;for(const p of peds)if(p.cuffed&&p.follow){p.cuffed=false;p.follow=false;p.state='flee'}me.inCar=false;me.x=STATION.x;me.y=STATION.y+T;showModal('<h2>🏥 You passed out!</h2>You wake up at the station with a juice box. -200 pts, -5 rep. Eat more donuts.',[['Okay mom',closeModal]])}
- S.rep=clamp(S.rep,0,100);
- for(const f of floaters){f.life-=dt;f.y-=12*dt}floaters=floaters.filter(f=>f.life>0);
- for(const p of parts){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt}parts=parts.filter(p=>p.life>0);
- for(const m of S.msgs)m.life-=dt;S.msgs=S.msgs.filter(m=>m.life>0);if(S.shake>0)S.shake-=dt;
-}
-function action(){
- if(me.inCar){if(dist(me,DONUT)<T*3){floatTxt(me.x,me.y,'Drive-thru closed. Walk, officer.','#aaa')}else{S.siren=!S.siren}return}
- if(dist(me,DONUT)<T*1.8){S.donuts++;S.hp=Math.min(100,S.hp+30);S.st=100;S.score+=5;floatTxt(me.x,me.y-8,pick(['*nom* +HP','Glazed glory!','Sprinkles = power','Mmmm donut']),'#f8c');for(let i=0;i<8;i++)parts.push({x:me.x,y:me.y,vx:rnd(-30,30),vy:rnd(-30,30),c:pick(['#f8c','#ff0','#8ff','#fff']),life:.7});return}
- if(dist(me,STATION)<T*1.8&&CASE.found>=3&&!CASE.solved){caseSolve();return}
- // cuff downed perp
- let tgt=null,bd=1e9;for(const p of peds){if(p.cuffed)continue;const d=dist(p,me);if(d<bd){bd=d;tgt=p}}
- if(tgt&&tgt.down>0&&bd<14){if(me.carry){floatTxt(me.x,me.y,'Hands full! Book the first one.','#aaa');return}tgt.cuffed=true;tgt.follow=true;tgt.down=0;me.carry=tgt;S.score+=50;floatTxt(tgt.x,tgt.y,'CUFFED! Take to station','#6f6');radio('You: "Suspect in custody. Bringing them in."','#8cf');return}
- if(tgt&&bd<22&&(tgt.crime)){if(S.st<15){floatTxt(me.x,me.y,'Too tired... need donut','#aaa');return}S.st-=15;me.tackle=.18;me.dir=Math.atan2(tgt.y-me.y,tgt.x-me.x);
-  if(bd<18||R()<.5){tgt.down=tgt.state=='flee'?2.5:3;S.shake=.2;floatTxt(tgt.x,tgt.y,'TACKLE! press A to cuff','#6f6')}else floatTxt(me.x,me.y,'*whiff*','#aaa');return}
- if(tgt&&bd<22&&!tgt.crime){if(tgt.state!='scared'){const asIn=R()<.3;const lines=['"Nice day, officer."','"I didn\'t do it! ...Do what?"','"Is that a donut on your badge?"','"My cousin is a lawyer. Sort of."','"Have you tried the new maple bar?"'];
-   if(asIn&&CASE.active&&!CASE.solved)floatTxt(tgt.x,tgt.y-6,'"Heard the Bank lost its donut fund. Weird times."','#fff');else floatTxt(tgt.x,tgt.y-6,pick(lines),'#fff');}return}
- if(dist(me,patrol)<T*2.2){floatTxt(me.x,me.y,'Press B to get in','#aaa')}
-}
+ // carried suspects follow trail
+ const lt=trail[0];if(!lt||Math.hypot(lt.x-me.x,lt.y-me.y)>2){trail.unshift({x:me.x,y:me.y});if(trail.length>60)trail.pop()}
+ S.carry.forEach((p,i)=>{if(p.inCar){p.x=patrol.x;p.y=patrol.y;return}const tp=trail[Math.min(trail.length-1,7+i*7)];if(tp){const d=Math.hypot(tp.x-p.x,tp.y-p.y);if(d>.5){const s=Math.min(d,Math.max(50,d*8)*dt);p.dir=Math.atan2(tp.y-p.y,tp.x-p.x);p.x+=(tp.x-p.x)/d*s;p.y+=(tp.y-p.y)/d*s;p.anim=(p.anim<0?0:p.anim)+dt*8}else p.anim=-1}});
+ if(S.scene=='city')updCity(dt);
+ sirenUpdate(me.inCar&&S.siren&&S.scene=='city');
+ AU.intense=S.scene=='city'&&(crimes.some(k=>(k.ped&&k.ped.state=='flee')||(k.car&&k.car.flee))||(me.inCar&&S.siren))?1:0;
+ // hp
+ S.hp=Math.min(100,S.hp+dt*.4);if(S.hp<=0)passOut();
+ for(const f of floaters){f.life-=dt;f.y-=14*dt}floaters=floaters.filter(f=>f.life>0);
+ for(const p of parts){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.92;p.vy*=.92}parts=parts.filter(p=>p.life>0);if(parts.length>500)parts.splice(0,parts.length-500);
+ for(const m of S.msgs)m.life-=dt;S.msgs=S.msgs.filter(m=>m.life>0);if(S.shake>0)S.shake-=dt}
+function updCity(dt){simT+=dt;
+ for(const p of peds)updPed(p,dt);for(const c of cars)updCar(c,dt);
+ for(const p of peds)if(p.witness&&p.sulk>0)p.sulk-=dt;
+ for(const p of peds)if(p.crime=='mug'&&p.state=='flee'&&!me.inCar&&dist(p,me)<11&&R()<dt*1.2){hurt(7);floatTxt(me.x,me.y-24,'*PURSE SWING* -7','#f55')}
+ cars=cars.filter(c=>!(c.busted&&Math.hypot(c.x-me.x,c.y-me.y)>T*30));while(cars.length<30){const c=mkCar();if(!c)break;cars.push(c)}
+ // flee car lost
+ for(const c of cars)if(c.flee&&Math.hypot(c.x-me.x,c.y-me.y)>T*48){c.flee=false;crimes=crimes.filter(k=>k.car!=c);repChange(-4);radio('DISPATCH: Stolen vehicle lost. Insurance company sends a frowny face.','#f88')}
+ crimes=crimes.filter(k=>k.ped?(k.ped.crime&&!k.ped.cuffed&&peds.includes(k.ped)):k.car&&k.car.flee);
+ S.spawnT-=dt;if(S.spawnT<=0){const hour=S.time/60;S.spawnT=rnd(8,15)-(hour-12)*.6;if(crimes.length<3+(hour>17?1:0))spawnCrime()}
+ S.banterT-=dt;if(S.banterT<=0){S.banterT=rnd(25,45);radio(pick(['DISPATCH: Cat stuck in tree on 5th. Again. Same cat.','DISPATCH: Report of a man "looking suspicious". He is just tall.','DISPATCH: Reminder: the break room microwave is NOT evidence.','DISPATCH: 10-DONUT, Sergeant wants a dozen. Glazed.','DISPATCH: Bagpipe noise complaint. Respond with empathy.','DISPATCH: Someone is selling "slightly used" parking meters.','DISPATCH: All units: the vending machine has won again.']),'#9c9');SFX.radio()}
+ if(S.caseDelay>0){S.caseDelay-=dt;if(S.caseDelay<=0){for(const p of peds)if(p.state=='witness'){p.state='walk';p.witness=null}newCase();radio(`SGT KRUPKE: New case: "${S.case.tpl.title}". Check the evidence board!`,'#fd6');SFX.radio()}}}
+function passOut(){S.hp=60;S.score-=150;repChange(-5);for(const p of S.carry){p.cuffed=false;p.follow=false;p.inCar=false;p.state='flee';p.ft=0;crimes.push({t:p.crime,ped:p})}S.carry=[];me.inCar=false;
+ if(S.scene!='city'){S.scene='city'}me.x=STATION.x;me.y=STATION.y+12;cam.x=me.x;cam.y=me.y;dlg('🏥 You passed out!','You wake up outside the station holding a juice box. -150 pts, -5 rep. Eat more donuts.',[['Okay mom']])}
+function endShift(){S.mode='end';sirenUpdate(false);const unfiled=S.held.filter(h=>!h.papered).length;const pen=unfiled*75;S.score-=pen;const before=SAVE.career;SAVE.career=Math.max(0,SAVE.career+Math.max(0,S.score|0));SAVE.shifts++;SAVE.best=Math.max(SAVE.best,S.score|0);persist();
+ const rk=rankOf(SAVE.career),promoted=rankOf(before)!=rk;if(promoted)SFX.fanfare();
+ dlg('🌙 End of Shift',`<b>Score:</b> ${S.score|0}<br><b>Arrests filed:</b> ${S.arrests} · <b>Tickets:</b> ${S.tickets}<br><b>Confessions:</b> ${S.stats.conf} · <b>Perfect forms:</b> ${S.stats.perfectForms}<br><b>Cases closed:</b> ${S.stats.cases}<br><b>Donuts eaten:</b> ${S.stats.donutsEaten}<br><b>Reputation:</b> ${S.rep|0}${unfiled?`<br><span style="color:#f88">Unfiled paperwork: ${unfiled} (-${pen})</span>`:''}<br><br>${S.rep>70?'Commissioner material!':S.rep>40?'Decent cop. Average mustache.':'Desk duty. Forever.'}<br><br>Career: ${SAVE.career} pts — <b>${rk}</b>${promoted?' 🎖 PROMOTED!':''}`,[['New shift',()=>{newShift()}],['Title screen',showTitle]],true)}
+
 // ---------- render
-function px(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
-function drawPerson(x,y,shirt,skin,hair,anim,cop,down,cuffed){x=Math.round(x);y=Math.round(y);
- if(down){px(x-6,y-1,12,5,shirt);px(x+4,y-1,3,3,skin);return}
- const l=Math.sin(anim)*2;px(x-3,y+2+(l>0?0:1),2,4,cop?'#112':'#335');px(x+1,y+2+(l>0?1:0),2,4,cop?'#112':'#335');
- px(x-4,y-3,8,6,shirt);if(cop){px(x-1,y-2,2,2,'#fd3');px(x-4,y+1,8,1,'#000')}
- px(x-3,y-8,6,5,skin);px(x-3,y-9,6,2,cop?'#114':hair);if(cop)px(x-4,y-8,8,1,'#114');
- px(x-2,y-6,1,1,'#000');px(x+1,y-6,1,1,'#000');if(cuffed){px(x-5,y,10,1,'#ccc')}}
-function drawCar(c,police){ctx.save();ctx.translate(Math.round(c.x),Math.round(c.y));ctx.rotate(c.a);
- px(-9,-5,18,10,police?'#fff':c.col);if(police){px(-9,-5,5,10,'#123');px(4,-5,5,10,'#123')}px(-3,-4,5,8,'#9cf');px(3,-4,2,8,'#468');
- px(-9,-6,4,1,'#111');px(5,-6,4,1,'#111');px(-9,5,4,1,'#111');px(5,5,4,1,'#111');px(8,-4,1,2,'#ff8');px(8,2,1,2,'#ff8');
- if(police&&c.siren){const on=(performance.now()/150|0)%2;px(-1,-3,2,3,on?'#f22':'#511');px(-1,0,2,3,on?'#225':'#22f')}
- if(c.busted){px(-6,-2,3,3,'#555');px(2,-1,2,2,'#555')}ctx.restore()}
-function render(){ctx.imageSmoothingEnabled=false;ctx.setTransform(1,0,0,1,0,0);px(0,0,W,H,'#222');
- const vw=W/Z,vh=H/Z;let camx=me.x-vw/2,camy=me.y-vh/2;if(S.shake>0){camx+=rnd(-2,2);camy+=rnd(-2,2)}
- ctx.setTransform(Z,0,0,Z,-Math.round(camx*Z),-Math.round(camy*Z));
- const x0=Math.max(0,camx/T|0),y0=Math.max(0,camy/T|0),x1=Math.min(N,(camx+vw)/T+2|0),y1=Math.min(N,(camy+vh)/T+2|0);
- for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const t=map[y*N+x],X=x*T,Y=y*T;
-  if(t==0){px(X,Y,T,T,'#3a3a40');const mx=x%P,my=y%P;if(mx==1&&my>=3&&y%2==0)px(X+7,Y,2,8,'#cc4');if(my==1&&mx>=3&&x%2==0)px(X,Y+7,8,2,'#cc4');
-   if((mx<3&&(my==3||my==P-1))||(my<3&&(mx==3||mx==P-1))){}
-   if(mx<3&&my<3){}else if(mx<3&&(my==3)){for(let i=0;i<T;i+=4)px(X+i,Y,2,T,'#ddd')}else if(my<3&&mx==3){for(let i=0;i<T;i+=4)px(X,Y+i,T,2,'#ddd')}}
-  else if(t==1){px(X,Y,T,T,'#999');px(X,Y,T,1,'#aaa');px(X,Y,1,T,'#888')}
-  else if(t==3){px(X,Y,T,T,'#4a3');if((x*7+y*3)%5==0){px(X+4,Y+2,8,8,'#284');px(X+7,Y+9,2,4,'#642')}}
-  else{const bx=Math.floor(x/P),by=Math.floor(y/P),b=blocks[bx+','+by]||{col:'#555'};px(X,Y,T,T,b.col);
-   if((x+y)%2==0)px(X+3,Y+4,4,5,'#cdf');else px(X+9,Y+6,4,5,'#235');px(X,Y+T-1,T,1,'rgba(0,0,0,.25)')}}
- // building signs
- for(const k in blocks){const[bx,by]=k.split(',').map(Number);const b=blocks[k];if(b.name=='Park')continue;const d=doorOf(bx,by);if(Math.abs(d.x-me.x)>vw||Math.abs(d.y-me.y)>vh)continue;
-  px(d.x-6,d.y-T-2,12,10,'#321');px(d.x-5,d.y-T-1,10,9,'#653');ctx.fillStyle=b.name=='POLICE'?'#9cf':b.name=='DONUTS'?'#f8c':'#fff';ctx.font='bold 7px monospace';ctx.textAlign='center';ctx.fillText(b.name.toUpperCase(),d.x,d.y-T*1.4);
-  if(b.name=='DONUTS'){ctx.beginPath();ctx.fillStyle='#d96';ctx.arc(d.x,d.y-T*2.4,7,0,7);ctx.fill();ctx.fillStyle='#f8c';ctx.beginPath();ctx.arc(d.x,d.y-T*2.4,6,0,7);ctx.fill();ctx.fillStyle=(blocks[k].col);ctx.beginPath();ctx.arc(d.x,d.y-T*2.4,2,0,7);ctx.fill()}
-  if(b.name=='POLICE'){const on=(performance.now()/400|0)%2;px(d.x-2,d.y-T*2.6,4,4,on?'#33f':'#f33')}}
- for(const p of parts)if(p.paint)px(p.x,p.y,2,2,p.c);
- for(const c of CASE.clues)if(!c.got){const b=Math.sin(performance.now()/200)*2;px(c.x-3,c.y-3,6,6,'#fd3');ctx.fillStyle='#000';ctx.font='bold 7px monospace';ctx.textAlign='center';ctx.fillText('?',c.x,c.y+2+b*0)}
- const ents=[];for(const p of peds)if(!p.inCar)ents.push({y:p.y,d:()=>{drawPerson(p.x,p.y,p.shirt,p.skin,p.hair,performance.now()/120+p.x,false,p.down>0,p.cuffed);if(p.crime&&!p.cuffed){const b=Math.sin(performance.now()/150)*2;px(p.x-2,p.y-19+b,4,7,'#f22');px(p.x-2,p.y-11+b,4,2,'#f22')}if(p.crime=='mug'&&p.victim&&p.state=='crime'){}}});
- for(const c of cars)ents.push({y:c.y,d:()=>{drawCar(c,false);if(c.flee){const b=Math.sin(performance.now()/150)*2;px(c.x-2,c.y-20+b,4,7,'#f22');px(c.x-2,c.y-12+b,4,2,'#f22')}}});
- ents.push({y:patrol.y,d:()=>drawCar(patrol,true)});if(!me.inCar)ents.push({y:me.y,d:()=>drawPerson(me.x,me.y,'#24a','#fcb','#000',me.anim,true,me.tackle>0,false)});
- ents.sort((a,b)=>a.y-b.y).forEach(e=>e.d());
- for(const p of parts)if(!p.paint)px(p.x,p.y,2,2,p.c);
- if(me.inCar&&S.siren){const on=(performance.now()/150|0)%2;ctx.fillStyle=on?'rgba(255,0,0,.08)':'rgba(0,0,255,.08)';ctx.fillRect(camx,camy,vw,vh)}
- ctx.textAlign='center';ctx.font='bold 7px monospace';for(const f of floaters){ctx.fillStyle='#000';ctx.fillText(f.t,f.x+1,f.y-11);ctx.fillStyle=f.c;ctx.fillText(f.t,f.x,f.y-12)}
- // off-screen arrows to crimes
+let LC,LG;
+function darkness(){const h=S?S.time/60:13;return{dusk:clamp(1-Math.abs(h-17.6)/1.6,0,1),night:clamp((h-17.8)/1.6,0,1)*.62}}
+function worldToScreen(x,y){return{x:(x-cam.x)*cam.z+W/2,y:(y-cam.y)*cam.z+H/2}}
+function render(dt){ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#0b0d1a';ctx.fillRect(0,0,W,H);if(!S)return;
+ const base=clamp(Math.min(W,H)/215,2,7);const zt=base*(S.scene=='city'?(me.inCar?.78:1):1.15)*(S.mode=='title'?.9:1);cam.z+=(zt-cam.z)*Math.min(1,dt*3);
+ let tx=me.x,ty=me.y;if(me.inCar&&S.scene=='city'){tx+=patrol.vx*.45;ty+=patrol.vy*.45}
+ const f=1-Math.exp(-dt*(me.inCar?5:8));cam.x+=(tx-cam.x)*f;cam.y+=(ty-cam.y)*f;
+ const vw=W/cam.z,vh=H/cam.z;
+ if(S.scene!='city'){const I=INTERIORS[S.scene];const iw=I.grid[0].length*T,ih=I.grid.length*T;cam.x=iw<vw?iw/2:clamp(cam.x,vw/2,iw-vw/2);cam.y=ih<vh?ih/2:clamp(cam.y,vh/2,ih-vh/2)}
+ let sx=0,sy=0;if(S.shake>0){sx=rnd(-2,2);sy=rnd(-2,2)}
+ const ox=Math.round(W/2-(cam.x+sx)*cam.z),oy=Math.round(H/2-(cam.y+sy)*cam.z);ctx.setTransform(cam.z,0,0,cam.z,ox,oy);
+ const x0=cam.x-vw/2-20,y0=cam.y-vh/2-20,x1=cam.x+vw/2+20,y1=cam.y+vh/2+20;const vis=e=>e.x>x0&&e.x<x1&&e.y>y0&&e.y<y1+20;
+ const now=performance.now();
+ if(S.scene=='city'){
+  const sx0=clamp(Math.floor(x0),0,N*T),sy0=clamp(Math.floor(y0),0,N*T),sw=clamp(Math.ceil(x1),0,N*T)-sx0,sh=clamp(Math.ceil(y1),0,N*T)-sy0;
+  if(sw>0&&sh>0)ctx.drawImage(CITY,sx0,sy0,sw,sh,sx0,sy0,sw,sh);
+  for(const p of parts)if(p.paint&&vis(p)){ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,p.s,p.s)}
+  // traffic lights
+  for(let ky=0;ky<=6;ky++)for(let kx=0;kx<=6;kx++){const ix=kx*PP,iy=ky*PP;if(ix<x0-60||ix>x1||iy<y0-60||iy>y1)continue;const L=light(kx,ky);const lc=s=>s=='g'?'#3f6':s=='y'?'#fd3':'#f33';
+   const box=(x,y,s)=>{ctx.fillStyle='#111';ctx.fillRect(x-2,y-2,5,5);ctx.fillStyle=lc(s);ctx.fillRect(x-1,y-1,3,3)};box(ix-6,iy-6,L.ns);box(ix+53,iy+53,L.ns);box(ix+53,iy-6,L.ew);box(ix-6,iy+53,L.ew)}
+  // case items
+  const C=S.case;if(C&&C.stage=='investigate')for(const s of C.srcs)if(s.src=='item'&&!s.found&&vis(s)){const b=Math.sin(now/200)*1.5;ctx.fillStyle='#fd3';ctx.fillRect(s.x-3,s.y-3+b,6,6);ctx.fillStyle='#fff';ctx.fillRect(s.x-1,s.y-6+b,2,2);if((now/300|0)%2){ctx.fillRect(s.x+4,s.y-4,1,1);ctx.fillRect(s.x-5,s.y+2,1,1)}}
+  const ents=[];
+  for(const p of peds)if(!p.inCar&&!p.inRoom&&vis(p))ents.push({y:p.y,d:()=>drawPed(p,now)});
+  for(const c of cars)if(vis(c))ents.push({y:c.y,d:()=>{drawCarSpr(ctx,c,c.type,c.col,c.ang,{busted:c.busted});if(c.flee)bang(c.x,c.y-12,now)}});
+  ents.push({y:patrol.y,d:()=>drawCarSpr(ctx,patrol,'police','#fff',patrol.a,{siren:S.siren&&me.inCar,passenger:S.carry.length&&me.inCar})});
+  if(!me.inCar)ents.push({y:me.y,d:()=>drawPerson(ctx,me.L,me.x,me.y,me.dir,me.anim,me.tackle>0?'down':'')});
+  ents.sort((a,b)=>a.y-b.y);for(const e of ents)e.d();
+  if(S.carry.length&&!me.inCar)for(const p of S.carry){ctx.strokeStyle='rgba(200,200,200,.6)';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(me.x,me.y-8);ctx.lineTo(p.x,p.y-8);ctx.stroke()}
+ }else{
+  ctx.drawImage(interiorCanvas(S.scene),0,0);
+  if(S.scene!='station'&&S.scene!='donut'){const C=S.case;if(C&&C.tpl.scene==S.scene&&C.stage=='investigate'){ctx.fillStyle='#fd3';for(let x=4*T;x<10*T;x+=8){ctx.fillRect(x,8.6*T,5,2)}ctx.fillStyle='#111';ctx.fillRect(4*T,8.6*T+2,6*T,1);
+    ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.strokeRect(7*T,3.5*T,22,10);const ev=sceneEvidence();if(ev){const b=Math.sin(now/200)*1.5;ctx.fillStyle='#fd3';ctx.fillRect(ev.ix-3,ev.iy-3+b,6,6);if((now/300|0)%2){ctx.fillStyle='#fff';ctx.fillRect(ev.ix+4,ev.iy-5,1,1)}}}}
+  const ents=[];const npc=(x,y,L,dir)=>ents.push({y,d:()=>drawPerson(ctx,L,x,y,dir,-1,'')});
+  if(S.scene=='station'){npc(12.5*T,1.9*T,SGT_LOOK,Math.PI/2);npc(13*T,10.8*T,DEE_LOOK,Math.PI/2);npc(22.5*T,1.8*T,CLERK_LOOK,Math.PI/2);npc(21*T,14.3*T,COP2_LOOK,-Math.PI/2)}
+  if(S.scene=='donut'){npc(5*T,1.9*T,GLAZIA_LOOK,Math.PI/2);npc(10.7*T,5*T,CRUMBS_LOOK,Math.PI)}
+  if(['bank','jewel','apart','pawn'].includes(S.scene))npc(4*T,1.8*T,OWNER_LOOK[S.scene],Math.PI/2);
+  for(const p of peds)if(p.inRoom&&S.scene=='station')ents.push({y:p.y,d:()=>{drawPerson(ctx,p.L,p.x,p.y,p.dir,-1,'');ctx.fillStyle='#ccc';ctx.fillRect(p.x-3,p.y-8,6,1)}});
+  for(const p of S.carry)ents.push({y:p.y,d:()=>drawPed(p,now)});
+  ents.push({y:me.y,d:()=>drawPerson(ctx,me.L,me.x,me.y,me.dir,me.anim,me.tackle>0?'down':'')});ents.sort((a,b)=>a.y-b.y);for(const e of ents)e.d();
+  if(S.scene=='station'){const lx=4*T,ly=2.6*T;const g=ctx.createRadialGradient(lx,ly,2,lx,ly,40);g.addColorStop(0,'rgba(255,240,150,.25)');g.addColorStop(1,'rgba(255,240,150,0)');ctx.fillStyle=g;ctx.fillRect(lx-40,ly-40,80,80)}}
+ for(const p of parts)if(!p.paint&&vis(p)){ctx.globalAlpha=Math.min(1,p.life*3);ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,p.s,p.s)}ctx.globalAlpha=1;
+ // lighting
+ if(S.scene=='city'){const dk=darkness();ctx.setTransform(1,0,0,1,0,0);
+  if(dk.dusk>0){ctx.fillStyle=`rgba(255,110,40,${dk.dusk*.16})`;ctx.fillRect(0,0,W,H)}
+  if(dk.night>0){if(!LC||LC.width!=W||LC.height!=H){[LC,LG]=mkCanvas(W,H)}LG.globalCompositeOperation='source-over';LG.clearRect(0,0,W,H);LG.fillStyle=`rgba(6,8,30,${dk.night})`;LG.fillRect(0,0,W,H);LG.globalCompositeOperation='destination-out';
+   const glow=(x,y,r,a)=>{const s=worldToScreen(x,y);const rr=r*cam.z;if(s.x<-rr||s.y<-rr||s.x>W+rr||s.y>H+rr)return;const g=LG.createRadialGradient(s.x,s.y,0,s.x,s.y,rr);g.addColorStop(0,`rgba(0,0,0,${a})`);g.addColorStop(1,'rgba(0,0,0,0)');LG.fillStyle=g;LG.fillRect(s.x-rr,s.y-rr,rr*2,rr*2)};
+   for(const l of LAMPS)if(vis(l))glow(l.x,l.y,34,.95);
+   const head=(c,a)=>{glow(c.x+Math.cos(a)*26,c.y+Math.sin(a)*26,22,.85)};for(const c of cars)if(vis(c)&&!c.busted)head(c,c.ang);head(patrol,patrol.a);glow(me.x,me.y,26,.6);
+   if(S.siren&&me.inCar){glow(patrol.x,patrol.y,40,.5)}
+   ctx.drawImage(LC,0,0);ctx.setTransform(cam.z,0,0,cam.z,ox,oy);ctx.globalAlpha=Math.min(1,dk.night*1.5);
+   const sx0=clamp(Math.floor(x0),0,N*T),sy0=clamp(Math.floor(y0),0,N*T),sw=clamp(Math.ceil(x1),0,N*T)-sx0,sh=clamp(Math.ceil(y1),0,N*T)-sy0;if(sw>0&&sh>0)ctx.drawImage(WIN,sx0,sy0,sw,sh,sx0,sy0,sw,sh);ctx.globalAlpha=1}
+  if(S.siren&&me.inCar){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=(now/150|0)%2?'rgba(255,0,0,.07)':'rgba(0,60,255,.07)';ctx.fillRect(0,0,W,H)}
+  ctx.setTransform(cam.z,0,0,cam.z,ox,oy)}
+ // overhead markers
+ if(S.scene=='city'){for(const p of peds){if(p.inCar||!vis(p))continue;if(p.crime&&!p.cuffed)bang(p.x,p.y-26,now,CR[p.crime].minor?'#fc3':'#f22');if(p.state=='witness')qmark(p.x,p.y-26,now)}
+  for(const k in blocks){const b=blocks[k];if(!ENTERABLE[b.type])continue;const d=doorOf(b.bx,b.by);if(!vis(d))continue;const near=Math.hypot(d.x-me.x,d.y-me.y)<40;if(near&&!me.inCar){ctx.fillStyle='rgba(255,255,255,'+(.4+.3*Math.sin(now/200))+')';ctx.fillRect(d.x-6,d.y+2,12,2)}
+   if(S.case&&S.case.stage=='investigate'&&b.type==S.case.tpl.scene&&!S.case.srcs.find(s=>s.src=='scene').found)qmark(d.x,d.y-30,now)}}
+ for(const f of floaters){if(f.scene!=S.scene)continue;ctx.globalAlpha=Math.min(1,f.life*2);ptext(ctx,f.t,f.x,f.y,f.c,1,'center','#000')}ctx.globalAlpha=1;
  ctx.setTransform(1,0,0,1,0,0);
- for(const c of crimes){const e=c.ped||c.car;const sx=(e.x-camx)*Z,sy=(e.y-camy)*Z;if(sx>0&&sy>0&&sx<W&&sy<H)continue;const a=Math.atan2(sy-H/2,sx-W/2);const r=Math.min(W,H)/2-30;
-  ctx.save();ctx.translate(W/2+Math.cos(a)*r,H/2+Math.sin(a)*r);ctx.rotate(a);ctx.fillStyle='#f33';ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-6,-8);ctx.lineTo(-6,8);ctx.fill();ctx.restore()}
- if(me.carry){const sx=(STATION.x-camx)*Z,sy=(STATION.y-camy)*Z;if(!(sx>0&&sy>0&&sx<W&&sy<H)){const a=Math.atan2(sy-H/2,sx-W/2),r=Math.min(W,H)/2-50;ctx.save();ctx.translate(W/2+Math.cos(a)*r,H/2+Math.sin(a)*r);ctx.rotate(a);ctx.fillStyle='#4af';ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-6,-8);ctx.lineTo(-6,8);ctx.fill();ctx.restore()}}
- // minimap
- const ms=Math.max(90,Math.min(W,H)*0.26)|0,mz=ms/N/T,mx0=W-ms-6,my0=6;ctx.globalAlpha=.85;px(mx0-2,my0-2,ms+4,ms+4,'#000');
- if(!render.mm){const o=document.createElement('canvas');o.width=N;o.height=N;const oc=o.getContext('2d');for(let y=0;y<N;y++)for(let x=0;x<N;x++){const t=map[y*N+x];oc.fillStyle=t==0?'#555':t==1?'#888':t==3?'#3a3':'#223';const b=blocks[Math.floor(x/P)+','+Math.floor(y/P)];if(t==2&&b&&b.name=='POLICE')oc.fillStyle='#36c';if(t==2&&b&&b.name=='DONUTS')oc.fillStyle='#e6a';oc.fillRect(x,y,1,1)}render.mm=o}
- ctx.imageSmoothingEnabled=false;ctx.drawImage(render.mm,mx0,my0,ms,ms);ctx.globalAlpha=1;
- const dot=(e,c,s)=>px(mx0+e.x*mz-s/2,my0+e.y*mz-s/2,s,s,c);
- for(const c of CASE.clues)if(!c.got)dot(c,'#fd3',4);for(const c of crimes)dot(c.ped||c.car,(performance.now()/250|0)%2?'#f22':'#fff',5);dot(patrol,'#8cf',3);dot(me,'#fff',4);
- // joystick
- if(joy.active){ctx.globalAlpha=.4;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(joy.ox,joy.oy,50,0,7);ctx.fill();ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(joy.ox+joy.x*50,joy.oy+joy.y*50,22,0,7);ctx.fill();ctx.globalAlpha=1}
- else if('ontouchstart' in window){ctx.globalAlpha=.25;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(90,H-110,50,0,7);ctx.stroke();ctx.fillStyle='#fff';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText('drag to move',90,H-105);ctx.globalAlpha=1}
-}
-function hud(){const h=S.time/60|0,m=S.time%60|0;document.getElementById('clock').textContent='🕒 '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
- document.getElementById('score').textContent=S.score|0;document.getElementById('rep').textContent=S.rep|0;document.getElementById('hpb').style.width=S.hp+'%';document.getElementById('stb').style.width=S.st+'%';
- document.getElementById('status').textContent=(me.inCar?'🚓 Driving':'🚶 On foot')+(me.carry?' · 🔗 '+me.carry.name:'')+' · 🍩'+S.donuts+' · 🕵'+(CASE.solved?'✔':CASE.found+'/3');
- document.getElementById('radio').innerHTML=S.msgs.map(m=>`<div style="color:${m.c};opacity:${Math.min(1,m.life/2)}">📻 ${m.t}</div>`).join('');
- let o='';if(me.carry)o='Bring '+me.carry.name.split(' ')[0]+' to the POLICE station (blue arrow)';else if(dist(me,DONUT)<T*1.8&&!me.inCar)o='Press A to buy a donut 🍩';else if(CASE.found>=3&&!CASE.solved)o='All clues found! Press A at the POLICE door to solve the case';else if(!me.inCar&&dist(me,patrol)<T*2.2)o='Press B to drive';else if(crimes.length)o='Respond to crimes (red !)';document.getElementById('obj').textContent=o}
-function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(!S.paused&&!S.modal&&!S.over)update(dt);render();hud();requestAnimationFrame(loop)}
-addEventListener('resize',resize);resize();
-radio('DISPATCH: Morning, Unit 12. Shift starts now. Try not to eat ALL the evidence.','#8cf');
-setTimeout(()=>radio('DISPATCH: Also, someone robbed the Bank\'s donut fund. Find the 3 yellow ? clues.','#fd3'),2500);
-requestAnimationFrame(loop);
-window.__S=S;window.__spawn=spawnCrime;
+ if(S.mode=='play'&&S.scene=='city'){drawArrows(now);drawMinimap(now)}
+ if(S.mode=='play'&&S.scene!='city'){ptext(ctx,INTERIORS[S.scene].name,W/2,H*0.12,'#fd6',Math.max(2,cam.z*.7|0),'center','#000')}
+ drawJoy()}
+function bang(x,y,now,c){const b=Math.round(Math.sin(now/130)*1.5);ctx.fillStyle='#000';ctx.fillRect(x-3,y-1+b,6,10);ctx.fillStyle=c||'#f22';ctx.fillRect(x-2,y+b,4,5);ctx.fillRect(x-2,y+6+b,4,2)}
+function qmark(x,y,now){const b=Math.round(Math.sin(now/160)*1.5);ctx.fillStyle='#000';ctx.fillRect(x-4,y-1+b,8,10);ptext(ctx,'?',x,y+1+b,'#fd3',1,'center',null)}
+function drawPed(p,now){const st=p.down>0?'down':'';drawPerson(ctx,p.L,p.x,p.y,p.dir,p.anim,st);
+ if(p.down>0&&!p.cuffed){for(let i=0;i<3;i++){const a=now/200+i*2.1;ctx.fillStyle='#ff6';ctx.fillRect(p.x+Math.cos(a)*6,p.y-12+Math.sin(a)*2,1,1)}}
+ if(p.cuffed){ctx.fillStyle='#ddd';ctx.fillRect(p.x-3,p.y-8,6,1)}if(p.state=='freeze'){ptext(ctx,'!',p.x,p.y-28,'#6ff',1)}}
+function edgeArrow(x,y,col,label){const s=worldToScreen(x,y);if(s.x>20&&s.y>20&&s.x<W-20&&s.y<H-20)return;const a=Math.atan2(s.y-H/2,s.x-W/2);const m=Math.min(W,H)*.06+28;
+ const ex=clamp(s.x,m,W-m),ey=clamp(s.y,m+60,H-m-20);ctx.save();ctx.translate(ex,ey);ctx.rotate(a);ctx.fillStyle='#000';ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-8,11);ctx.fill();ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-6,-8);ctx.lineTo(-6,8);ctx.fill();ctx.restore();
+ if(label){const d=Math.hypot(x-me.x,y-me.y)/T|0;ptext(ctx,label+' '+d+'M',ex,ey+12,col,2,'center','#000')}}
+function drawArrows(now){for(const k of crimes){const e=k.ped||k.car;if(e)edgeArrow(e.x,e.y,k.t=='warrant'?'#fd3':CR[k.t].minor?'#fc3':'#f44')}
+ if(S.carry.length)edgeArrow(STATION.x,STATION.y,'#4af','JAIL');
+ const C=S.case;if(C&&C.stage=='investigate'&&C.srcs.filter(s=>s.found).length==3)edgeArrow(STATION.x,STATION.y,'#fd6','BOARD');
+ if(me.inCar==false&&dist(me,patrol)>T*12)edgeArrow(patrol.x,patrol.y,'#8cf')}
+let MM;function minimapBase(){if(MM)return MM;const[c,g]=mkCanvas(N,N);for(let y=0;y<N;y++)for(let x=0;x<N;x++){const t=map[y*N+x];g.fillStyle=t==0?'#55586a':t==1?'#8a8a96':t==3?'#3a8a3a':t==4?'#a89a70':t==5?'#3a6ab8':'#25283a';const b=blocks[Math.floor(x/P)+','+Math.floor(y/P)];if(t==2&&b){if(b.type=='police')g.fillStyle='#3a5ad8';else if(b.type=='donut')g.fillStyle='#e86ab8';else if(ENTERABLE[b.type])g.fillStyle='#6a5a8a'}g.fillRect(x,y,1,1)}MM=c;return c}
+function mmRect(){const big=!!(S&&S.bigMap);const ms=big?Math.min(W,H)*.9:clamp(Math.min(W,H)*.27,96,180);return{x:big?(W-ms)/2:W-ms-8,y:big?(H-ms)/2:8,s:ms,big}}
+function drawMinimap(now){const r=mmRect();const span=r.big?N:30;let cx=me.x/T,cy=me.y/T;if(r.big){cx=N/2;cy=N/2}const sx=clamp(cx-span/2,0,N-span),sy=clamp(cy-span/2,0,N-span);const k=r.s/span;
+ ctx.fillStyle='#000';ctx.fillRect(r.x-3,r.y-3,r.s+6,r.s+6);ctx.imageSmoothingEnabled=false;ctx.drawImage(minimapBase(),sx,sy,span,span,r.x,r.y,r.s,r.s);
+ const dot=(wx,wy,c,s)=>{const x=r.x+(wx/T-sx)*k,y=r.y+(wy/T-sy)*k;if(x<r.x||y<r.y||x>r.x+r.s||y>r.y+r.s){return}ctx.fillStyle='#000';ctx.fillRect(x-s/2-1,y-s/2-1,s+2,s+2);ctx.fillStyle=c;ctx.fillRect(x-s/2,y-s/2,s,s)};
+ const blink=(now/250|0)%2;const C=S.case;
+ if(C&&C.stage=='investigate')for(const s of C.srcs){if(s.found)continue;if(s.src=='item')dot(s.x,s.y,'#fd3',5);if(s.src=='witness'&&s.ped)dot(s.ped.x,s.ped.y,'#fd3',5);if(s.src=='scene'){const b=findBlock(C.tpl.scene),d=doorOf(b.bx,b.by);dot(d.x,d.y,'#fd3',6)}}
+ for(const kk of crimes){const e=kk.ped||kk.car;if(e)dot(e.x,e.y,blink?(kk.t=='warrant'?'#fd3':'#f33'):'#fff',6)}
+ dot(STATION.x,STATION.y,'#4af',6);dot(DONUT.x,DONUT.y,'#f8c',6);dot(patrol.x,patrol.y,'#8cf',4);dot(me.x,me.y,'#fff',5);
+ ptext(ctx,r.big?'CITY MAP - TAP TO CLOSE':'MAP',r.x+r.s/2,r.y+r.s+4,'#fff',r.big?2:1,'center','#000')}
+function drawJoy(){const j=IN.joy;if(j.id!==null){ctx.globalAlpha=.35;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(j.ox,j.oy,j.R,0,TAU);ctx.fill();ctx.globalAlpha=.25;ctx.strokeStyle='#000';ctx.lineWidth=3;ctx.stroke();ctx.globalAlpha=.85;ctx.fillStyle='#dde';ctx.beginPath();ctx.arc(j.ox+j.rx*j.R,j.oy+j.ry*j.R,j.R*.42,0,TAU);ctx.fill();ctx.globalAlpha=1}
+ else if(S&&S.mode=='play'&&IS_TOUCH&&!S.modal){ctx.globalAlpha=.22;ctx.strokeStyle='#fff';ctx.lineWidth=3;const x=Math.max(90,W*.18),y=H-Math.max(110,H*.17);ctx.beginPath();ctx.arc(x,y,j.R,0,TAU);ctx.stroke();ctx.globalAlpha=.5;ptext(ctx,'DRAG HERE',x,y-5,'#fff',2,'center','#000');ctx.globalAlpha=1}}
+const SGT_LOOK={skin:'#f0c090',hair:'#666',hs:0,shirt:'#2c4cb0',pants:'#1a2550',shoes:'#111',build:2,ht:1,cop:true,stache:true};
+const DEE_LOOK={skin:'#8a5a3a',hair:'#1a1410',hs:4,shirt:'#2c4cb0',pants:'#1a2550',shoes:'#111',build:1,ht:1,glasses:true};
+const CLERK_LOOK={skin:'#ffdbb5',hair:'#a0602a',hs:2,shirt:'#5a6a9a',pants:'#333',shoes:'#111',build:0,ht:1,glasses:true};
+const COP2_LOOK=Object.assign({},COP_LOOK,{skin:'#c88a5a',build:2});
+const GLAZIA_LOOK={skin:'#ffd0c0',hair:'#e0c060',hs:4,shirt:'#fff',apron:'#ff8ac8',pants:'#333',shoes:'#fff',build:1,ht:1};
+const CRUMBS_LOOK={skin:'#f0c090',hair:'#ddd',hs:0,shirt:'#7a5',pants:'#543',shoes:'#333',build:1,ht:1,old:true,beard:true};
+const OWNER_LOOK={bank:{skin:'#ffdbb5',hair:'#888',hs:1,shirt:'#333',pants:'#333',shoes:'#111',build:2,ht:1,glasses:true},jewel:{skin:'#c88a5a',hair:'#1a1410',hs:6,shirt:'#93c',pants:'#226',shoes:'#111',build:0,ht:2,stache:true},apart:{skin:'#ffdbb5',hair:'#e0c060',hs:1,shirt:'#c22',pants:'#226',shoes:'#111',build:2,ht:1,hat:'#333'},pawn:{skin:'#8a5a3a',hair:'#333',hs:3,shirt:'#7a5',pants:'#543',shoes:'#a52',build:1,ht:1,beard:true}};
+
+// ---------- UI / input wiring
+const IS_TOUCH=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+function mkBtn(id,html,cls){const d=document.createElement('div');d.id=id;d.className=cls||'btn';d.innerHTML=html;document.body.appendChild(d);return d}
+const bA=mkBtn('bA','A'),bB=mkBtn('bB','B'),bS=mkBtn('bS','RUN'),bH=mkBtn('bH','🚨');
+const tP=mkBtn('tP','II','tb'),tM=mkBtn('tM','♪','tb'),tF=mkBtn('tF','⛶','tb');
+function hold(el,down,up){el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();audioInit();try{el.setPointerCapture(e.pointerId)}catch(_){}el.classList.add('on');vib(10);down()});
+ const u=e=>{el.classList.remove('on');up&&up()};el.addEventListener('pointerup',u);el.addEventListener('pointercancel',u);el.addEventListener('lostpointercapture',u)}
+hold(bA,()=>{if(S&&!S.modal)IN.pressA=true});hold(bB,()=>{if(S&&!S.modal)IN.pressB=true});hold(bS,()=>IN.run=true,()=>IN.run=false);
+hold(bH,()=>{if(S&&me.inCar){S.siren=!S.siren;SFX.blip()}else if(S)shout()});
+hold(tP,()=>togglePause());hold(tM,()=>{setMuted(!SAVE.muted);tM.textContent=SAVE.muted?'🔇':'♪'});
+hold(tF,()=>{const d=document;if(!d.fullscreenElement&&!d.webkitFullscreenElement){const el=d.documentElement;(el.requestFullscreen||el.webkitRequestFullscreen||(()=>{})).call(el,{navigationUI:'hide'})?.catch?.(()=>{})}else (d.exitFullscreen||d.webkitExitFullscreen).call(d)});
+tM.textContent=SAVE.muted?'🔇':'♪';
+// joystick on canvas (pointer events)
+cv.addEventListener('pointerdown',e=>{audioInit();if(!S||S.mode!='play'||S.modal)return;const r=mmRect();
+ if(e.clientX>r.x&&e.clientX<r.x+r.s&&e.clientY>r.y&&e.clientY<r.y+r.s&&S.scene=='city'){S.bigMap=!S.bigMap;SFX.blip();return}if(S.bigMap){S.bigMap=false;return}
+ const j=IN.joy;if(j.id===null&&(e.clientX<W*.6||e.pointerType=='mouse')){j.id=e.pointerId;j.ox=e.clientX;j.oy=e.clientY;j.rx=j.ry=0;try{cv.setPointerCapture(e.pointerId)}catch(_){}}});
+cv.addEventListener('pointermove',e=>{const j=IN.joy;if(e.pointerId!==j.id)return;let dx=e.clientX-j.ox,dy=e.clientY-j.oy;const m=Math.hypot(dx,dy);
+ if(m>j.R*1.25){const k=(m-j.R*1.25)/m;j.ox+=dx*k;j.oy+=dy*k;dx=e.clientX-j.ox;dy=e.clientY-j.oy}const mm=Math.hypot(dx,dy);const c=Math.min(1,mm/j.R);j.rx=mm?dx/mm*c:0;j.ry=mm?dy/mm*c:0});
+const jEnd=e=>{const j=IN.joy;if(e.pointerId!==j.id)return;j.id=null;j.rx=j.ry=0};cv.addEventListener('pointerup',jEnd);cv.addEventListener('pointercancel',jEnd);
+// keyboard
+addEventListener('keydown',e=>{audioInit();if(!keys[e.code]&&S&&S.mode=='play'){if(!S.modal){if(e.code=='Space'||e.code=='KeyJ'||e.code=='Enter')IN.pressA=true;if(e.code=='KeyE'||e.code=='KeyK')IN.pressB=true;if(e.code=='KeyH'){if(me.inCar)S.siren=!S.siren;else shout()}if(e.code=='KeyM'){S.bigMap=!S.bigMap}}
+ if(e.code=='KeyP'||e.code=='Escape')togglePause()}
+ if(S&&S.modal&&/^Digit[1-9]$/.test(e.code)){const bs=$('box').querySelectorAll('button');const b=bs[+e.code.slice(5)-1];if(b)b.click()}
+ keys[e.code]=true;if(e.code.startsWith('Arrow')||e.code=='Space')e.preventDefault()});
+addEventListener('keyup',e=>keys[e.code]=false);addEventListener('blur',()=>{for(const k in keys)keys[k]=false;IN.run=false;IN.joy.id=null;IN.joy.rx=IN.joy.ry=0});
+// block browser gestures
+document.addEventListener('touchmove',e=>{if(!e.target.closest('#box'))e.preventDefault()},{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault());document.addEventListener('dblclick',e=>e.preventDefault());document.addEventListener('contextmenu',e=>e.preventDefault());
+let lastTouchEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastTouchEnd<300&&!e.target.closest('#box,#title'))e.preventDefault();lastTouchEnd=n},{passive:false});
+// layout
+function resize(){W=innerWidth;H=innerHeight;DPR=1;cv.width=W;cv.height=H;layout()}
+function layout(){const land=W>H;const s=clamp(Math.min(W,H)*(land?.2:.19),64,120);const pad=Math.max(12,s*.15);
+ const set=(d,right,bottom,k,fs)=>{d.style.width=d.style.height=(s*k)+'px';d.style.right=right+'px';d.style.bottom=bottom+'px';d.style.fontSize=(s*k*(fs||.26))+'px'};
+ set(bA,pad,pad+s*.55,1.15,.24);set(bB,pad+s*1.3,pad,.9,.26);set(bS,pad+s*1.3,pad+s*1.05,.8,.24);set(bH,pad+s*.2,pad+s*1.85,.62,.36);
+ IN.joy.R=clamp(Math.min(W,H)*.13,48,90);
+ const r=mmRect();[tP,tM,tF].forEach((b,i)=>{b.style.right=(W-r.x+8+i*44)+'px';b.style.top='8px'});
+ $('radio').style.top=(land?78:96)+'px';$('radio').style.maxWidth=land?'45%':'64%';$('obj').style.bottom=(land?8:pad+s*2.6)+'px';
+ if(land){$('obj').style.left='40%'}else $('obj').style.left='50%'}
+addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,200));
+// pause/help
+const HELP=`<b>Goal:</b> survive your shift (12:00–20:00). Stop crimes, book perps, file paperwork, eat donuts, crack cases. Score adds to your career rank (saved).<br><br>
+<b>Touch:</b> drag anywhere on the left to move (floating stick) · <b>A</b> = context action (TACKLE / CUFF / TICKET / ENTER / TALK / SEARCH) · <b>B</b> = get in/out of the cruiser · <b>RUN</b> = sprint (in car: turbo) · <b>🚨</b> siren (on foot: shout FREEZE!) · tap the minimap for the big map.<br>
+<b>Keys:</b> WASD/Arrows · Space/J = A · E/K = B · Shift = run · H = siren · M = map · P/Esc = pause · 1-9 = pick dialog option.<br><br>
+<b>Crimes:</b> red <b>!</b> = arrestable (tackle → cuff → drive to POLICE → BOOKING desk → interrogate → PAPERWORK). Yellow <b>!</b> = minor (walk up and TICKET). Stolen cars: ram 3× then cuff the driver.<br>
+<b>Cases:</b> 3 clues each — crime scene interior, a witness in a yellow cap, and dropped evidence (yellow ✦). Then ACCUSE on the Evidence Board in the Sergeant's office, arrest the culprit and book them.<br>
+<b>Donuts:</b> heal, and bribe witnesses & suspects. Coffee = speed. Lights: cars stop at reds; so should you (morally).`;
+function togglePause(){if(!S||S.mode!='play')return;if(S.modal&&!S.paused)return;if(S.paused){S.paused=false;closeDlg();return}S.paused=true;
+ dlg('⏸ Paused',`${HELP}<br><br><b>Shift:</b> score ${S.score|0} · arrests ${S.arrests} · tickets ${S.tickets} · case: ${S.case?S.case.tpl.title+' ('+S.case.srcs.filter(s=>s.found).length+'/3)':'-'}`,[['▶ Resume',()=>{S.paused=false}],['🕵 Case notes',()=>{S.paused=false;evidenceBoardNotes()}],[`📳 Vibration: ${SAVE.vib?'ON':'OFF'}`,()=>{SAVE.vib=!SAVE.vib;persist();S.paused=false;togglePause()}],[`🎵 Music: ${SAVE.music?'ON':'OFF'}`,()=>{SAVE.music=!SAVE.music;persist();if(AU.mus)AU.mus.gain.value=SAVE.music?.22:0;S.paused=false;togglePause()}],['🏠 Quit to title (shift lost)',()=>{S.paused=false;showTitle()}]],true)}
+function evidenceBoardNotes(){const C=S.case;if(!C)return;dlg('Case Notes',`<b>${C.tpl.title}</b><br>${C.tpl.intro}<br><br>`+C.srcs.map(s=>s.found?'📌 '+s.text:'❓ ???').join('<br>')+'<br><br><i>Accuse at the Evidence Board in the station.</i>',[['Close']])}
+// HUD
+const hudCache={};function setH(id,v,prop){if(hudCache[id]===v)return;hudCache[id]=v;const e=$(id);if(prop)e.style[prop]=v;else e.innerHTML=v}
+function hud(){const show=S&&S.mode=='play';for(const id of['hud','radio','obj','bA','bB','bS','bH','tP','tM','tF']){const v=show?'':'none';if(hudCache[id+'_d']!==v){hudCache[id+'_d']=v;$(id).style.display=v}}if(!show)return;
+ const h=S.time/60|0,m=S.time%60|0;setH('clock','🕒'+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));setH('score','★'+(S.score|0));setH('rank',rankOf(SAVE.career+S.score).toUpperCase());
+ setH('hpb',S.hp+'%','width');setH('stb',S.st+'%','width');setH('rpb',S.rep+'%','width');
+ setH('status',(me.inCar?'🚓 DRIVING':'🚶 ON FOOT')+(S.carry.length?' · 🔗'+S.carry.length:'')+' · 🍩'+S.donuts+(S.boost>0?' · ☕':'')+' · 🕵'+(S.case?(S.case.stage=='investigate'?S.case.srcs.filter(s=>s.found).length+'/3':S.case.stage=='warrant'?'WARRANT':'✔'):'-')+(S.held.some(h=>!h.papered)?' · 📝'+S.held.filter(h=>!h.papered).length:''));
+ setH('radio',S.msgs.map(m=>`<div style="color:${m.c};opacity:${Math.min(1,m.life/2).toFixed(1)}">📻 ${m.t}</div>`).join(''));
+ let o='';const C=S.case;if(S.carry.length&&S.scene=='city')o='Bring perp to POLICE (blue arrow)';else if(S.carry.length&&S.scene=='station')o='Go to BOOKING desk (top-right room)';else if(S.held.some(h=>!h.papered)&&S.scene=='station')o='Interrogate (top-left) or do PAPERWORK (bullpen)';else if(C&&C.stage=='investigate'&&C.srcs.every(s=>s.found))o='All clues! Evidence board in the station';else if(C&&C.stage=='warrant')o='Arrest '+C.culprit.name+' (yellow !)';else if(S.hp<35)o='Low HP — get donuts (pink on map)';else if(crimes.length&&S.scene=='city')o='Respond to crimes (red/yellow !)';
+ setH('obj',o);$('obj').style.display=o?'':'none';
+ if(S.act){const l=S.act.label;setH('bA',`A<small>${l}</small>`)}if(S.bAct){setH('bB',`B<small>${S.bAct.label}</small>`);$('bB').style.opacity=S.bAct.dim?.5:1}
+ setH('bS',me.inCar?'TURBO':'RUN');setH('bH',me.inCar?'🚨':'📣')}
+// title
+function showTitle(){closeDlg();if(!S||S.mode!='title'){newShift()}S.mode='title';sirenUpdate(false);$('title').style.display='flex';
+ const nr=nextRank(SAVE.career);$('career').innerHTML=`Rank: <b>${rankOf(SAVE.career)}</b> · Career ${SAVE.career} pts${nr?` (${nr[0]-SAVE.career} to ${nr[1]})`:''}<br>Shifts ${SAVE.shifts} · Best ${SAVE.best} · Cases ${SAVE.cases||0}`;$('tSnd').textContent='♪ Sound: '+(SAVE.muted?'off':'on')}
+$('tStart').onclick=()=>{audioInit();SFX.success();$('title').style.display='none';newShift();if(IS_TOUCH)toast('Drag left side to move · A = action',2600)};
+$('tHelp').onclick=()=>{audioInit();dlg('How to Play',HELP,[['Got it']],true);S.modal=false};
+$('tSnd').onclick=()=>{audioInit();setMuted(!SAVE.muted);tM.textContent=SAVE.muted?'🔇':'♪';$('tSnd').textContent='♪ Sound: '+(SAVE.muted?'off':'on')};
+function titleUpdate(dt){simT+=dt;const t=performance.now()/1000;me.x=PP*3+Math.cos(t*.05)*PP*1.6;me.y=PP*3+Math.sin(t*.05)*PP*1.6;for(const c of cars)updCar(c,dt);for(const p of peds)if(p.state=='walk'||p.state=='waitcross'||p.state=='cross'||p.state=='idle')updPed(p,dt)}
+function drawTitle(){const s=Math.max(4,Math.min(W/40,H/22)|0);const y=H*.12;const t=performance.now();ctx.fillStyle='rgba(0,0,20,.45)';ctx.fillRect(0,0,W,H);
+ ptext(ctx,'BEAT COP',W/2,y+Math.sin(t/400)*3,'#fd3',s,'center','#702');ptext(ctx,'DONUT JUSTICE',W/2,y+s*8,(t/300|0)%2?'#f8c':'#fff',Math.max(2,s/2|0),'center','#000');
+ drawPerson(ctx,COP_LOOK,W/2,y+s*18,Math.PI/2,(t/150)%4,'');ctx.save();ctx.translate(W/2,y+s*12);ctx.scale(s/2,s/2);drawPerson(ctx,COP_LOOK,0,20,Math.PI/2,(t/180)%4,'');ctx.restore()}
+// ---------- loop
+let last=performance.now();
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;
+ try{if(S){if(S.mode=='play'&&!S.paused&&!S.modal)update(dt);else if(S.mode=='title')titleUpdate(dt);if(S.mode=='play'&&S.modal&&S.scene=='city'){for(const f of floaters)f.life-=dt*0}}
+  render(dt);if(S&&S.mode=='title')drawTitle();hud()}catch(err){console.error(err);window.__err=String(err.stack||err)}
+ requestAnimationFrame(loop)}
+$('ver').textContent='v'+VERSION;
+buildCity();resize();showTitle();requestAnimationFrame(loop);
+// debug hooks for automated tests
+window.__bc={get S(){return S},get me(){return me},get peds(){return peds},get cars(){return cars},spawnCrime,newShift,enterScene,exitScene,cuff,tackle,stationAct,accuse,findClue,
+ tp:(x,y)=>{me.x=x;me.y=y;cam.x=x;cam.y=y},STATION,DONUT,patrol:()=>patrol,crimes:()=>crimes,setTime:t=>S.time=t};
+
 </script></body></html>
