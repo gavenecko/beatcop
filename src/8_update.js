@@ -53,7 +53,7 @@ function update(dt){
  if(me.inCar&&S.scene=='city'){updPatrol(dt,iv,running);me.x=patrol.x;me.y=patrol.y}
  else{const canRun=running&&S.st>1;const sp=(canRun?82:46)*(S.st<10?0.65:1)*(S.boost>0?1.25:1);
   if(canRun&&iv.m>.1)S.st-=13*dt;else S.st=Math.min(100,S.st+(iv.m>.1?5:9)*dt);
-  const solid=S.scene=='city'?solidCity:(x,y)=>iSolid(S.scene,x,y);
+  const onF=tile(me.x/T,me.y/T)==7||tile(me.x/T,(me.y+4)/T)==7||tile(me.x/T,(me.y-4)/T)==7;const solid=S.scene=='city'?((x,y)=>{VAULT=canRun||onF?1:0;const r=solidCity(x,y);VAULT=0;return r}):(x,y)=>iSolid(S.scene,x,y);
   if(me.tackle>0){me.tackle-=dt;moveCircle(me,Math.cos(me.dir)*150*dt,Math.sin(me.dir)*150*dt,4,solid)}
   else if(iv.m>.08){me.dir=Math.atan2(iv.y,iv.x);moveCircle(me,iv.x*sp*dt,iv.y*sp*dt,4,solid);const pa=me.anim;me.anim=(me.anim<0?0:me.anim)+dt*sp*.18;if((pa|0)!=(me.anim|0)&&(me.anim|0)%2==0)SFX.step();if(canRun&&R()<dt*10)parts.push({x:me.x,y:me.y,vx:rnd(-8,8),vy:-6,c:'#bbb',life:.35,s:2})}
   else me.anim=-1;

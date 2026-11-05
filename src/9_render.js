@@ -17,7 +17,7 @@ function render(dt){ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=fals
   if(sw>0&&sh>0)ctx.drawImage(CITY,sx0,sy0,sw,sh,sx0,sy0,sw,sh);
   for(const p of parts)if(p.paint&&vis(p)){ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,p.s,p.s)}
   // traffic lights
-  for(let ky=0;ky<=6;ky++)for(let kx=0;kx<=6;kx++){const ix=kx*PP,iy=ky*PP;if(ix<x0-60||ix>x1||iy<y0-60||iy>y1)continue;const L=light(kx,ky);const lc=s=>s=='g'?'#3f6':s=='y'?'#fd3':'#f33';
+  for(let ky=0;ky<=BN;ky++)for(let kx=0;kx<=BN;kx++){const ix=kx*PP,iy=ky*PP;if(ix<x0-60||ix>x1||iy<y0-60||iy>y1)continue;const L=light(kx,ky);const lc=s=>s=='g'?'#3f6':s=='y'?'#fd3':'#f33';
    const box=(x,y,s)=>{ctx.fillStyle='#111';ctx.fillRect(x-2,y-2,5,5);ctx.fillStyle=lc(s);ctx.fillRect(x-1,y-1,3,3)};box(ix-6,iy-6,L.ns);box(ix+53,iy+53,L.ns);box(ix+53,iy-6,L.ew);box(ix-6,iy+53,L.ew)}
   // case items
   const C=S.case;if(C&&C.stage=='investigate')for(const s of C.srcs)if(s.src=='item'&&!s.found&&vis(s)){const b=Math.sin(now/200)*1.5;ctx.fillStyle='#fd3';ctx.fillRect(s.x-3,s.y-3+b,6,6);ctx.fillStyle='#fff';ctx.fillRect(s.x-1,s.y-6+b,2,2);if((now/300|0)%2){ctx.fillRect(s.x+4,s.y-4,1,1);ctx.fillRect(s.x-5,s.y+2,1,1)}}
@@ -51,9 +51,9 @@ function render(dt){ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=fals
    for(const c of cars)if(vis(c)&&!c.busted)head(c,c.ang,58,20,.9);head(patrol,patrol.a,75,24,.95);glow(patrol.x,patrol.y,14,.5);
    if(!me.inCar){head({x:me.x,y:me.y-6},me.dir,70,22,.9);glow(me.x,me.y-6,16,.7)}if(window.extLights)extLights(glow);
    if(S.siren&&me.inCar){glow(patrol.x,patrol.y,40,.5)}
-   ctx.drawImage(LC,0,0);ctx.globalCompositeOperation='lighter';for(const l of LAMPS)if(vis(l)){const s=worldToScreen(l.x,l.y),rr=26*cam.z;const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,rr);g.addColorStop(0,`rgba(255,200,90,${.22*dk.night})`);g.addColorStop(1,'rgba(255,200,90,0)');ctx.fillStyle=g;ctx.fillRect(s.x-rr,s.y-rr,rr*2,rr*2)}ctx.globalCompositeOperation='source-over';ctx.setTransform(cam.z,0,0,cam.z,ox,oy);ctx.globalAlpha=Math.min(1,dk.night*1.5);
+   ctx.drawImage(LC,0,0);ctx.globalCompositeOperation='lighter';for(const l of LAMPS)if(vis(l)){const s=worldToScreen(l.x,l.y),rr=26*cam.z;const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,rr);g.addColorStop(0,`rgba(255,200,90,${.22*dk.night})`);g.addColorStop(1,'rgba(255,200,90,0)');ctx.fillStyle=g;ctx.fillRect(s.x-rr,s.y-rr,rr*2,rr*2)}if(window.extGlowAdd)extGlowAdd(dk,vis);ctx.globalCompositeOperation='source-over';ctx.setTransform(cam.z,0,0,cam.z,ox,oy);ctx.globalAlpha=Math.min(1,dk.night*1.5);
    const sx0=clamp(Math.floor(x0),0,N*T),sy0=clamp(Math.floor(y0),0,N*T),sw=clamp(Math.ceil(x1),0,N*T)-sx0,sh=clamp(Math.ceil(y1),0,N*T)-sy0;if(sw>0&&sh>0)ctx.drawImage(WIN,sx0,sy0,sw,sh,sx0,sy0,sw,sh);ctx.globalAlpha=1}
-  if(S.siren&&me.inCar){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=(now/150|0)%2?'rgba(255,0,0,.07)':'rgba(0,60,255,.07)';ctx.fillRect(0,0,W,H)}
+  if(S.siren&&me.inCar){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=(now/150|0)%2?'rgba(255,0,0,.07)':'rgba(0,60,255,.07)';ctx.fillRect(0,0,W,H)}if(window.extScreenFx){ctx.setTransform(1,0,0,1,0,0);extScreenFx(now,dk)}
   ctx.setTransform(cam.z,0,0,cam.z,ox,oy)}
  // overhead markers
  if(S.scene=='city'){for(const p of peds){if(p.inCar||!vis(p))continue;if(p.crime&&!p.cuffed)bang(p.x,p.y-26,now,CR[p.crime].minor?'#fc3':'#f22');if(p.state=='witness')qmark(p.x,p.y-26,now)}
@@ -77,7 +77,7 @@ function drawArrows(now){for(const k of crimes){if(k.hidden)continue;const e=k.p
  if(S.carry.length)edgeArrow(STATION.x,STATION.y,'#4af','JAIL');
  const C=S.case;if(C&&C.stage=='investigate'&&C.srcs.filter(s=>s.found).length==3)edgeArrow(STATION.x,STATION.y,'#fd6','BOARD');
  if(me.inCar==false&&dist(me,patrol)>T*12)edgeArrow(patrol.x,patrol.y,'#8cf')}
-let MM;function minimapBase(){if(MM)return MM;const[c,g]=mkCanvas(N,N);for(let y=0;y<N;y++)for(let x=0;x<N;x++){const t=map[y*N+x];g.fillStyle=t==0?'#55586a':t==1?'#8a8a96':t==3?'#3a8a3a':t==4?'#a89a70':t==5?'#3a6ab8':'#25283a';const b=blocks[Math.floor(x/P)+','+Math.floor(y/P)];if(t==2&&b){if(b.type=='police')g.fillStyle='#3a5ad8';else if(b.type=='donut')g.fillStyle='#e86ab8';else if(ENTERABLE[b.type])g.fillStyle='#6a5a8a'}g.fillRect(x,y,1,1)}MM=c;return c}
+let MM;function minimapBase(){if(MM)return MM;const[c,g]=mkCanvas(N,N);for(let y=0;y<N;y++)for(let x=0;x<N;x++){const t=map[y*N+x];g.fillStyle=t==0?'#55586a':t==1?'#8a8a96':t==3?'#3a8a3a':t==4?'#a89a70':t==5?'#3a6ab8':t==6||t==7?'#3a3b44':'#25283a';const b=blocks[Math.floor(x/P)+','+Math.floor(y/P)];if(t==2&&b){if(b.type=='police')g.fillStyle='#3a5ad8';else if(b.type=='donut')g.fillStyle='#e86ab8';else if(ENTERABLE[b.type])g.fillStyle='#6a5a8a';else if(b.ind)g.fillStyle='#3a4450'}g.fillRect(x,y,1,1)}MM=c;return c}
 function mmRect(){const big=!!(S&&S.bigMap);const ms=big?Math.min(W,H)*.9:clamp(Math.min(W,H)*.27,96,180);return{x:big?(W-ms)/2:W-ms-8,y:big?(H-ms)/2:8,s:ms,big}}
 function drawMinimap(now){const r=mmRect();const span=r.big?N:30;let cx=me.x/T,cy=me.y/T;if(r.big){cx=N/2;cy=N/2}const sx=clamp(cx-span/2,0,N-span),sy=clamp(cy-span/2,0,N-span);const k=r.s/span;
  ctx.fillStyle='#000';ctx.fillRect(r.x-3,r.y-3,r.s+6,r.s+6);ctx.imageSmoothingEnabled=false;ctx.drawImage(minimapBase(),sx,sy,span,span,r.x,r.y,r.s,r.s);

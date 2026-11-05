@@ -21,7 +21,7 @@ const D4=[[1,0],[0,1],[-1,0],[0,-1]];
 function pedNextTile(p){const cx=Math.floor(p.x/T),cy=Math.floor(p.y/T);const fd=[Math.round(Math.cos(p.dir)),Math.round(Math.sin(p.dir))];
  let opts=D4.filter(d=>!(d[0]==-fd[0]&&d[1]==-fd[1]));shuffle(opts);opts.sort((a,b)=>((b[0]==fd[0]&&b[1]==fd[1])?1:0)-((a[0]==fd[0]&&a[1]==fd[1])?1:0));if(R()<.25)shuffle(opts);
  for(const d of opts){const nx=cx+d[0],ny=cy+d[1];const t=tile(nx,ny);
-  if(walkPed(t)){p.tx=nx;p.ty=ny;p.dir=Math.atan2(d[1],d[0]);return}
+  if(walkPed(t)&&!HLOCK((nx+.5)*T,(ny+.5)*T)){p.tx=nx;p.ty=ny;p.dir=Math.atan2(d[1],d[0]);return}
   if(t==0&&isCross(nx,ny)&&R()<.5){// crosswalk: wait for light
    let kx,ky,ok;if(d[1]==0){kx=Math.floor(nx/P);ky=Math.floor(ny/P)+(ny%P==P-1?1:0);ok=()=>light(kx,ky).ew=='g'}else{ky=Math.floor(ny/P);kx=Math.floor(nx/P)+(nx%P==P-1?1:0);ok=()=>light(kx,ky).ns=='g'}
    p.state='waitcross';p.cross={d,ok,tx:cx+d[0]*4,ty:cy+d[1]*4,t:0};p.dir=Math.atan2(d[1],d[0]);return}}
@@ -64,7 +64,7 @@ function moveCircle(e,dx,dy,r,solid){let hit=0;const ok=(x,y)=>!solid(x-r,y-r)&&
 const DX=[1,0,-1,0],DY=[0,1,0,-1];
 const CTYPES=['sedan','sedan','sedan','taxi','van','sport','truck'];
 function laneCoord(dir,k){return k*PP+(dir==0?36:dir==2?12:dir==1?12:36)}
-function mkCar(){for(let tries=0;tries<30;tries++){const dir=ri(0,3),k=ri(0,6),along=ri(0,6)*PP+rnd(70,PP-30);if(along>N*T-20)continue;
+function mkCar(){for(let tries=0;tries<30;tries++){const dir=ri(0,3),k=ri(0,CLIM()),along=ri(0,CLIM()-(CLIM()<BN?1:0))*PP+rnd(70,PP-30);if(along>N*T-20)continue;
   const c={dir,ang:dir*Math.PI/2,v:0,maxv:rnd(40,58),type:pick(CTYPES),col:pick(CARCOL),inter:-1,turn:null,turnAt:0,blockT:0};if(c.type=='taxi')c.col='#eb2';
   if(dir%2==0){c.y=laneCoord(dir,k);c.x=along}else{c.x=laneCoord(dir,k);c.y=along}
   if(c.x>N*T-30||c.y>N*T-30)continue;if(cars.some(o=>Math.hypot(o.x-c.x,o.y-c.y)<40))continue;if(Math.abs(c.x-cam.x)<W/cam.z/2+30&&Math.abs(c.y-cam.y)<H/cam.z/2+30&&S.time>12*60+1)continue;return c}return null}
@@ -72,8 +72,8 @@ function entryDist(c){const d=c.dir;if(d==0){const f=c.x+11;return Math.ceil(f/P
 function updCar(c,dt){if(c.stopped>0){c.stopped-=dt;return}if(c.busted){return}
  const flee=c.flee;let vt=flee?(me.inCar?105:80):c.maxv;
  const inter=(c.x%PP<48)&&(c.y%PP<48);const kx=Math.floor(c.x/PP),ky=Math.floor(c.y/PP),id=kx*10+ky;
- if(!inter){const ed=entryDist(c)-16;if(!flee&&ed>-4&&ed<34){const L=light(Math.floor((c.x+DX[c.dir]*40)/PP),Math.floor((c.y+DY[c.dir]*40)/PP));const st=c.dir%2==0?L.ew:L.ns;if(st=='r'||(st=='y'&&ed>10))vt=Math.min(vt,Math.max(0,(ed-1)*3))}}
- else if(c.inter!=id){c.inter=id;const opts=[];for(const nd of[c.dir,(c.dir+1)%4,(c.dir+3)%4]){if(nd==0&&kx>=6)continue;if(nd==2&&kx<=0)continue;if(nd==1&&ky>=6)continue;if(nd==3&&ky<=0)continue;opts.push(nd)}
+ if(!inter){const ed=entryDist(c)-16;if(!flee&&!c.runRed&&ed>-4&&ed<34){const L=light(Math.floor((c.x+DX[c.dir]*40)/PP),Math.floor((c.y+DY[c.dir]*40)/PP));const st=c.dir%2==0?L.ew:L.ns;if(st=='r'||(st=='y'&&ed>10))vt=Math.min(vt,Math.max(0,(ed-1)*3))}}
+ else if(c.inter!=id){c.inter=id;const opts=[];for(const nd of[c.dir,(c.dir+1)%4,(c.dir+3)%4]){if(nd==0&&kx>=CLIM())continue;if(nd==2&&kx<=0)continue;if(nd==1&&ky>=CLIM())continue;if(nd==3&&ky<=0)continue;opts.push(nd)}
   let nd=c.dir;if(opts.length){if(flee){opts.sort((a,b)=>{const sa=DX[a]*(c.x-me.x)+DY[a]*(c.y-me.y),sb=DX[b]*(c.x-me.x)+DY[b]*(c.y-me.y);return sb-sa+(R()-.5)*80});nd=opts[0]}else nd=R()<.55&&opts.includes(c.dir)?c.dir:pick(opts)}
   if(nd!=c.dir){c.turn=nd;c.turnAt=nd%2==0?laneCoord(nd,ky):laneCoord(nd,kx)}else c.turn=null}
  if(c.turn!=null){const passed=c.dir==0?c.x>=c.turnAt:c.dir==2?c.x<=c.turnAt:c.dir==1?c.y>=c.turnAt:c.y<=c.turnAt;if(passed){if(c.dir%2==0)c.x=c.turnAt;else c.y=c.turnAt;c.dir=c.turn;c.turn=null;if(c.dir%2==0)c.y=laneCoord(c.dir,ky);else c.x=laneCoord(c.dir,kx)}else vt=Math.min(vt,flee?70:30)}
@@ -95,7 +95,7 @@ function updPatrol(dt,iv,boost){const p=patrol;let hx=Math.cos(p.a),hy=Math.sin(
   if(Math.abs(d)>2.4&&f<25){f-=iv.m*120*dt;const d2=angDiff(p.a,ta+Math.PI);p.a+=clamp(d2*3,-2.4,2.4)*dt*Math.min(1,Math.abs(f)/25)}
   else{const thr=iv.m*(boost?280:180)*(SAVE.upg&&SAVE.upg.engine?1.2:1)*(Math.abs(d)>1.4?.35:1);f+=thr*dt;p.a+=clamp(d*4.5,-3.4,3.4)*dt*clamp(Math.abs(f)/40,.3,1)}}
  else f*=Math.pow(.25,dt);
- f*=Math.pow(boost?.7:.6,dt);f=clamp(f,-70,(boost?215:160)*(SAVE.upg&&SAVE.upg.engine?1.18:1));lat*=Math.pow(boost?.02:.002,dt);
+ f*=Math.pow(boost?.7:.6,dt);f=clamp(f,-70,(boost?215:160)*(SAVE.upg&&SAVE.upg.engine?1.18:1));lat*=Math.pow((boost?.02:.002)*(S.wet?12:1),dt);
  hx=Math.cos(p.a);hy=Math.sin(p.a);p.vx=hx*f-hy*lat;p.vy=hy*f+hx*lat;p.f=f;
  const pre={x:p.vx,y:p.vy};const hit=moveCircle(p,p.vx*dt,p.vy*dt,6,solidCity);
  if(hit){const imp=Math.abs(hit&1?pre.x:0)+Math.abs(hit&2?pre.y:0);if(hit&1)p.vx*=-.25;if(hit&2)p.vy*=-.25;if(imp>70&&S.crashT<=0){S.crashT=.4;SFX.crash();vib(50);S.shake=.35;spark(p.x+hx*10,p.y+hy*10,10);hurt(imp/30)}}

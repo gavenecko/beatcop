@@ -1,4 +1,4 @@
-# Beat Cop: Donut Justice (v2.1.0)
+# Beat Cop: Donut Justice (v2.2.0)
 
 A top-down, GTA-style 2D pixel-art beat cop simulator in one self-contained `index.html` with no external assets.
 
@@ -13,6 +13,18 @@ A top-down, GTA-style 2D pixel-art beat cop simulator in one self-contained `ind
 - **Interiors:** the station has a front desk, interrogation room, cells, the Sergeant's office with the evidence board, booking, and your desk for paperwork. You can also enter the donut shop and crime scenes (bank, jeweler, apartments, pawn shop).
 - **Minigames:** interrogation (suspect quirks, pressure and lawyer meters) and paperwork (typos, crime codes, triplicate stamping).
 - **Career:** rank, best shift, and solved cases are saved to localStorage. Pixel font and a title screen.
+
+## New in v2.2
+- **Harbor District:** opens at Senior Officer rank. It's a new ring of warehouses, docks and a marina in the southeast, closed off by barricades until you reach that rank. It has its own crimes: cargo theft (thieves drop crates while running), trespassing, and street races where both cars run red lights. It also adds a new case, *The Fishy Shipment*, set in the Pier 9 Warehouse.
+- **Foot pursuits:** alleys cut through blocks, and you can hold RUN to vault their fences. Runners use the alleys too.
+- **Evidence photos:** tap 📷 near a suspect caught in the act, or near a dropped crate.
+- **Court:** big arrests go to trial once the paperwork is filed. Conviction odds come from photos, confessions, stakeout tape, your rep and Ramirez. You can stick to the facts, give risky dramatic testimony, or have Ramirez testify. The verdict is guilty, a plea deal, or not guilty.
+- **Ramirez:** more lines that depend on the situation (rain, night, harbor, chases). His focus can be set at the station desk: Chaser, Spotter (reveals crimes instantly and takes photos) or Smooth talker (better court odds, more rep).
+- **Weather:** some shifts get rain. Roads turn slick, lamps reflect on the wet street, there's thunder at night, and fleeing suspects can slip.
+- **Radio scanner:** reports crimes the moment they happen. Without it, dispatch reaches you about 5 seconds late.
+- **Traffic:** speeders and drunk drivers run red lights, and some floor it when you turn the siren on, which starts a car chase.
+- **Fixes:** Ramirez and backup units no longer walk through walls, and the daily goals now have their own line on the HUD, so the tutorial no longer covers them.
+- **Feel:** colored neon glows from shop signs at night, dock workers in hi-vis vests, beanies and caps, and a Large UI text setting.
 
 ## New in v2.1
 - **Crimes:** speeding (use the radar gun, then make a traffic stop and write a ticket), DUI (pull over, breathalyzer, arrest), bar brawls, pickpockets, armed robbery (shots fired, call BACKUP, take cover, the suspect can surrender), drug-deal stakeouts (wait for the handoff for a bonus), and noise complaints.
@@ -31,3 +43,5 @@ Keyboard: WASD or arrows to move, Space/J = A, E/K = B, Shift = run, H = siren, 
 
 ## Development
 The source is in `src/`. Run `./build.sh` to concatenate it into `index.html`.
+
+Created by Gavenecko.

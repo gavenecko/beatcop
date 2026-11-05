@@ -1,7 +1,7 @@
 "use strict";
-const VERSION='2.1.0';
+const VERSION='2.2.0';
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
-const T=16,P=12,N=75,BN=6,TAU=Math.PI*2;
+const T=16,P=12,N=87,BN=7,TAU=Math.PI*2;
 let W=1,H=1,DPR=1,Z=3;
 const R=Math.random,rnd=(a,b)=>a+R()*(b-a),ri=(a,b)=>Math.floor(rnd(a,b+1)),pick=a=>a[Math.floor(R()*a.length)];
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t;
