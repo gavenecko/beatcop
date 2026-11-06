@@ -25,11 +25,11 @@ function spawnNew(ty){const C=CR[ty];
  if(ty=='brawl'){const c=nearPeds(4,28);const p=pick(c);if(!p)return;const q=c.filter(o=>o!=p).sort((a,b)=>dist(a,p)-dist(b,p))[0];if(!q)return;
   for(const o of[p,q]){o.crime='brawl';o.state='crime';o.ct=0;o.foe=o==p?q:p;crimes.push({t:'brawl',ped:o})}
   radio(`DISPATCH: ${C.code} Fist fight near ${where(p)}! ${p.name.split(' ')[0]} vs ${q.name.split(' ')[0]}.`,'#ff8');SFX.radio();return p}
- if(ty=='deal'){const p=pick(nearPeds(6,30));if(!p)return;const q=mkPed();q.x=p.x+10;q.y=p.y;q.L.hood='#333';moveCircle(q,0,0,4,solidCity);peds.push(q);
+ if(ty=='deal'){const p=pick(nearPeds(6,30));if(!p)return;const q=mkPed();q.x=p.x+10;q.y=p.y;mutateLook(q,{hood:'#333'});moveCircle(q,0,0,4,solidCity);peds.push(q);
   for(const o of[p,q]){o.crime='deal';o.state='crime';o.ct=0;o.foe=o==p?q:p;o.stake=0;crimes.push({t:'deal',ped:o})}
   radio(`DISPATCH: ${C.code} Suspected deal near ${where(p)}. Stake out from a distance before busting for a bonus.`,'#ff8');SFX.radio();return p}
  const p=pick(nearPeds(5,30));if(!p)return;p.crime=ty;p.state='crime';p.ct=0;crimes.push({t:ty,ped:p});
- if(ty=='robbery'){p.L=Object.assign({},p.L,{mask:true,hat:null,hood:null,headph:null});p.armed=true;p.shootT=2;radio(`DISPATCH: ${C.code} ARMED ROBBERY near ${where(p)}! Use your cruiser as cover, call BACKUP, or tase.`,'#f88')}
+ if(ty=='robbery'){mutateLook(p,{mask:true,hood:'#222',hat:null,beanie:null,cap:null,headph:null});p.armed=true;p.shootT=2;radio(`DISPATCH: ${C.code} ARMED ROBBERY near ${where(p)}! Use your cruiser as cover, call BACKUP, or tase.`,'#f88')}
  else radio(`DISPATCH: ${C.code} Pickpocket working the crowd near ${where(p)}. ${colName(p.L.shirt)} shirt.`,'#ff8');SFX.radio();return p}
 const _crimeBehave=crimeBehave;crimeBehave=function(p,dt){const t=p.crime;
  if(t=='brawl'){p.ct+=dt;const f=p.foe;if(f&&f.crime=='brawl'&&f.state=='crime'){const d=dist(p,f);if(d>11){p.x+=(f.x-p.x)/d*30*dt;p.y+=(f.y-p.y)/d*30*dt;p.anim+=dt*8}else{p.anim+=dt*10;if(R()<dt*1.6){floatTxt((p.x+f.x)/2,p.y-24,pick(['POW!','BAM!','OOF!','SMACK!']),'#fa0',.8);spark((p.x+f.x)/2,p.y-10,3);SFX.whiff()}}p.dir=Math.atan2(f.y-p.y,f.x-p.x)}else p.anim=-1;
@@ -72,11 +72,11 @@ function arrestDriver(c){const p=mkPed(c.drvLook);p.name=c.drvName;p.x=c.x;p.y=c
 function spawnEvent(type){const X=S.x;type=type||pick(['cat','kid','party'].concat(rankIdx()>=1&&!X.closure?['parade']:[]).filter(t=>!X.ev.some(e=>e.type==t)));if(!type)return;
  if(type=='cat'){const t=randTile((v,x,y)=>v==3&&Math.hypot((x+.5)*T-me.x,(y+.5)*T-me.y)<T*30);const e={type,x:(t.x+.5)*T,y:(t.y+.5)*T,t:120};X.ev.push(e);radio(`DISPATCH: Cat stuck in a tree near ${where(e)}. Yes, the same cat.`,'#9cf')}
  if(type=='kid'){const t=randTile((v,x,y)=>v==1&&Math.hypot((x+.5)*T-me.x,(y+.5)*T-me.y)<T*25);const t2=randTile((v,x,y)=>v==1&&Math.hypot(x-t.x,y-t.y)>14&&Math.hypot(x-t.x,y-t.y)<32);
-  const L=randLook();Object.assign(L,{ht:0,build:0,beard:false,stache:false,old:false});const e={type,x:(t.x+.5)*T,y:(t.y+.5)*T,L,dir:Math.PI/2,anim:-1,follow:false,px:(t2.x+.5)*T,py:(t2.y+.5)*T,PL:randLook(),t:180};X.ev.push(e);radio(`DISPATCH: Lost kid crying near ${where(e)}. Find their parent.`,'#9cf')}
+  const L=randLook('kid');const e={type,x:(t.x+.5)*T,y:(t.y+.5)*T,L,dir:Math.PI/2,anim:-1,follow:false,px:(t2.x+.5)*T,py:(t2.y+.5)*T,PL:randLook(),t:180};X.ev.push(e);radio(`DISPATCH: Lost kid crying near ${where(e)}. Find their parent.`,'#9cf')}
  if(type=='party'){const b=findBlock('apart'),d=doorOf(b.bx,b.by);X.ev.push({type,x:d.x,y:d.y,t:150});radio('DISPATCH: Noise complaint at the apartments. Loud polka. Knock on the door.','#9cf')}
  if(type=='parade')spawnParade();SFX.radio()}
 function spawnParade(){const ky=ri(1,5),kx=clamp(Math.floor(me.x/PP)+ri(-1,1),0,5);const Z={x0:kx*PP+48,x1:(kx+1)*PP,y0:ky*PP,y1:ky*PP+48,t:90,m:[]};
- for(let i=0;i<9;i++){const L=randLook();L.hat=pick(['#c22','#fd3','#fff','#36c']);Z.m.push({L,o:i*15+rnd(0,6),lane:i%3})}
+ for(let i=0;i<9;i++){const L=randLook();mutateLook(L,{hat:pick(['#c22','#fd3','#fff','#36c'])});Z.m.push({L,o:i*15+rnd(0,6),lane:i%3})}
  cars=cars.filter(c=>!(c.x>Z.x0-6&&c.x<Z.x1+6&&c.y>Z.y0&&c.y<Z.y1&&!c.flee&&!c.offense));S.x.closure=Z;S.x.ev.push({type:'parade',x:(Z.x0+Z.x1)/2,y:Z.y0+24,t:90});
  radio(`DISPATCH: Parade near ${where({x:Z.x0+60,y:Z.y0-20})}. Road closed 90s. Do NOT drive through it.`,'#9cf')}
 function party(e){dlg('🎺 Noise Complaint',say('PARTY HOST','"It\'s a POLKA party, officer! Polka is a lifestyle!"'),[['🙂 Ask nicely to turn it down',()=>evDone(e,'QUIET +60',60,2)],['🎫 Write noise citation',()=>{S.tickets++;evDone(e,'CITATION +90',90,-1)}]])}
@@ -84,7 +84,6 @@ function evDone(e,txt,pts,rep){e.done=true;S.score+=pts;repChange(rep);S.stats.e
 function callBackup(p){S.x.backup={delay:S.x.partner?2:6,target:p,L:COP2_LOOK,x:0,y:0,anim:-1,dir:0};radio('YOU: "Shots fired! Requesting backup!"','#8cf');SFX.radio()}
 function tase(p){const X=S.x;X.taserCd=7;X.zap={x1:me.x,y1:me.y-10,x2:p.x,y2:p.y-10,t:.3};p.down=p.armed?5:3.5;p.hitT=.3;if(p.state=='crime')p.state='flee';S.hitstop=.08;S.shake=.25;tone(1400,.25,'sawtooth',.12,300);vib(60);S.stats.tased++;floatTxt(p.x,p.y-24,'ZZZAP!','#6ff')}
 // ---------- partner & upgrades
-const PARTNER_LOOK={skin:'#c88a5a',hair:'#1a1410',hs:2,shirt:'#2c4cb0',pants:'#1a2550',shoes:'#111',build:0,ht:1,cop:true};
 const QUIPS=['"Donut o\'clock yet?"','"I\'ve seen worse driving. At a derby."','"Is it legal to arrest a mime?"','"Sarge says I talk too much. Anyway-"','"Nice siren. Very... loud."','"I call shotgun. Forever."','"You ever REALLY think about donuts?"','"My mom said I\'d never be a cop."'];
 function copDesk(){const X=S.x;dlg('Officer Ramirez',say('OFFICER RAMIREZ',X.partner?'"Partner! Need something?"':'"Rookie Ramirez reporting. Want a partner? I chase runners and I know ALL the jokes."')+`<br><br>Requisition budget: <b>$${SAVE.cash|0}</b>`,
  [[X.partner?'👋 Dismiss partner':'🤝 Ride along with me',()=>{if(X.partner){X.partner=null;toast('Ramirez stays at the station')}else{X.partner={x:me.x+10,y:me.y,L:PARTNER_LOOK,cd:0,anim:-1,dir:0,quipT:8,scene:S.scene};toast('🤝 Ramirez joins your patrol');SFX.success()}}],['🛒 Requisitions (upgrades)',shop],['Bye']])}

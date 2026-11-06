@@ -89,10 +89,6 @@ function drawMinimap(now){const r=mmRect();const span=r.big?N:30;let cx=me.x/T,c
  ptext(ctx,r.big?'CITY MAP - TAP TO CLOSE':'MAP',r.x+r.s/2,r.y+r.s+4,'#fff',r.big?2:1,'center','#000')}
 function drawJoy(){const j=IN.joy;if(j.id!==null){ctx.globalAlpha=.35;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(j.ox,j.oy,j.R,0,TAU);ctx.fill();ctx.globalAlpha=.25;ctx.strokeStyle='#000';ctx.lineWidth=3;ctx.stroke();ctx.globalAlpha=.85;ctx.fillStyle='#dde';ctx.beginPath();ctx.arc(j.ox+j.rx*j.R,j.oy+j.ry*j.R,j.R*.42,0,TAU);ctx.fill();ctx.globalAlpha=1}
  else if(S&&S.mode=='play'&&IS_TOUCH&&!S.modal){ctx.globalAlpha=.22;ctx.strokeStyle='#fff';ctx.lineWidth=3;const x=Math.max(90,W*.18),y=H-Math.max(110,H*.17);ctx.beginPath();ctx.arc(x,y,j.R,0,TAU);ctx.stroke();ctx.globalAlpha=.5;ptext(ctx,'DRAG HERE',x,y-5,'#fff',2,'center','#000');ctx.globalAlpha=1}}
-const SGT_LOOK={skin:'#f0c090',hair:'#666',hs:0,shirt:'#2c4cb0',pants:'#1a2550',shoes:'#111',build:2,ht:1,cop:true,stache:true};
-const DEE_LOOK={skin:'#8a5a3a',hair:'#1a1410',hs:4,shirt:'#2c4cb0',pants:'#1a2550',shoes:'#111',build:1,ht:1,glasses:true};
-const CLERK_LOOK={skin:'#ffdbb5',hair:'#a0602a',hs:2,shirt:'#5a6a9a',pants:'#333',shoes:'#111',build:0,ht:1,glasses:true};
-const COP2_LOOK=Object.assign({},COP_LOOK,{skin:'#c88a5a',build:2});
 const GLAZIA_LOOK={skin:'#ffd0c0',hair:'#e0c060',hs:4,shirt:'#fff',apron:'#ff8ac8',pants:'#333',shoes:'#fff',build:1,ht:1};
 const CRUMBS_LOOK={skin:'#f0c090',hair:'#ddd',hs:0,shirt:'#7a5',pants:'#543',shoes:'#333',build:1,ht:1,old:true,beard:true};
 const OWNER_LOOK={bank:{skin:'#ffdbb5',hair:'#888',hs:1,shirt:'#333',pants:'#333',shoes:'#111',build:2,ht:1,glasses:true},jewel:{skin:'#c88a5a',hair:'#1a1410',hs:6,shirt:'#93c',pants:'#226',shoes:'#111',build:0,ht:2,stache:true},apart:{skin:'#ffdbb5',hair:'#e0c060',hs:1,shirt:'#c22',pants:'#226',shoes:'#111',build:2,ht:1,hat:'#333'},pawn:{skin:'#8a5a3a',hair:'#333',hs:3,shirt:'#7a5',pants:'#543',shoes:'#a52',build:1,ht:1,beard:true}};

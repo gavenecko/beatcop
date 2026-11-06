@@ -16,12 +16,8 @@ CASES.push({title:'The Fishy Shipment',scene:'wharf',intro:'A whole container of
 const _newCase=newCase;newCase=function(){if(CASES[(SAVE.caseIdx||0)%CASES.length].scene=='wharf'&&harborLocked())SAVE.caseIdx=(SAVE.caseIdx||0)+1;return _newCase.apply(this,arguments)};
 const _randTile=randTile;randTile=function(test){return _randTile((v,x,y)=>test(v,x,y)&&!HLOCK((x+.5)*T,(y+.5)*T))};
 // sprites
-const _randLook=randLook;randLook=function(){const L=_randLook();if(R()<.07)L.vest=true;if(R()<.08&&!L.hat&&!L.hood)L.beanie=pick(['#c33','#264','#333','#e90']);if(R()<.05)L.cap=pick(['#c22','#228','#fff']);return L};
-const _dpf=drawPersonFrame;drawPersonFrame=function(g,L,dir,fr,ox,oy){_dpf(g,L,dir,fr,ox,oy);const legL=[3,4,5][L.ht],torso=[4,6,7][L.ht],bw=[4,6,7][L.build],legTop=22-legL,tTop=legTop-torso,hTop=tTop-5,tx=6-Math.ceil(bw/2);const p=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(ox+x,oy+y,w,h)};
- if(L.vest){p(tx,tTop,bw,torso-1,'#f70');p(tx,tTop+2,bw,1,'#ff6');if(torso>5)p(tx,tTop+4,bw,1,'#ff6')}
- if(L.beanie&&!L.mask){p(3,hTop-1,6,2,L.beanie);p(3,hTop,6,1,shade(L.beanie,.75))}
- if(L.cap&&!L.mask&&!L.hat){p(3,hTop-1,6,2,L.cap);if(dir==0)p(2,hTop+1,8,1,shade(L.cap,.7));else if(dir==2)p(6,hTop+1,4,1,shade(L.cap,.7))}};
-const _mkPed=mkPed;mkPed=function(L){const p=_mkPed(L);if(!L&&inHarbor(p)&&R()<.45){p.L.vest=true;p.L.beanie=p.L.beanie||pick(['#c33','#264','#e90'])}return p};
+const _randLook=randLook;randLook=function(arch){if(!arch&&R()<.1)arch='hoodie';if(!arch&&R()<.08)arch='worker';return _randLook(arch)};
+const _mkPed=mkPed;mkPed=function(L){if(!L&&arguments.length==0){/*harbor bias applied after position*/}const p=_mkPed(L);if(!L&&inHarbor(p)&&R()<.45)p.L=randLook('worker');return p};
 // crimes
 Object.assign(CR,{cargo:{n:'Cargo Theft',code:'10-CT',pts:300,flee:1},trespass:{n:'Trespassing',code:'10-TP',pts:60,flee:.35,minor:1},race:{n:'Street Racing',code:'10-SR',pts:260,car:1}});
 const BIG={robbery:1,deal:1,gta:1,cargo:1,dui:1,mug:1,warrant:1,race:1};
@@ -31,7 +27,7 @@ function spawnHarbor(){const pool=['cargo','cargo','trespass','race'];const ty=p
   for(const c of pair){Object.assign(c,{offense:'race',done:false,pulled:false,baseMax:c.baseMax||c.maxv,maxv:rnd(95,110),drvLook:randLook(),drvName:rname(),stopT:0,radChecked:false,runRed:true,type:'sport',col:pick(['#f2f','#2f6','#ff2','#f60'])});c.spr=null;crimes.push({t:'race',car:c,hidden:false})}
   radio(`DISPATCH: ${CR.race.code} Street race tearing through ${where(pair[0])}! Neon sports cars. Siren + tail to pull over.`,'#f88');SFX.radio();return pair[0]}
  const cand=peds.filter(p=>p.state=='walk'&&!p.crime&&inHarbor(p)&&dist(p,me)<T*32&&dist(p,me)>T*5);const p=pick(cand);if(!p)return null;p.crime=ty;p.state='crime';p.ct=0;crimes.push({t:ty,ped:p});
- if(ty=='cargo'){p.crate=3;p.L=Object.assign({},p.L,{beanie:'#222',vest:false});radio(`DISPATCH: ${CR.cargo.code} Someone's lifting crates near ${where(p)}. Snap a 📷 photo before the bust for court.`,'#ff8')}
+ if(ty=='cargo'){p.crate=3;mutateLook(p,{beanie:'#222',vest:false,hat:null,hood:null,cap:null,mask:false});radio(`DISPATCH: ${CR.cargo.code} Someone's lifting crates near ${where(p)}. Snap a 📷 photo before the bust for court.`,'#ff8')}
  else radio(`DISPATCH: ${CR.trespass.code} Trespasser on a restricted pier near ${where(p)}.`,'#cf8');SFX.radio();return p}
 const _spawnCrime2=spawnCrime;spawnCrime=function(force){if(!S.x2)initX2();const n0=crimes.length;let r;
  const hold=!force&&!S.tut&&!SAVE.upg.scanner;HOLDR=hold?1:0;

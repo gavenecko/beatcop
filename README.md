@@ -1,4 +1,4 @@
-# Beat Cop: Donut Justice (v2.2.0)
+# Beat Cop: Donut Justice (v2.3.0)
 
 A top-down, GTA-style 2D pixel-art beat cop simulator in one self-contained `index.html` with no external assets.
 
@@ -13,6 +13,11 @@ A top-down, GTA-style 2D pixel-art beat cop simulator in one self-contained `ind
 - **Interiors:** the station has a front desk, interrogation room, cells, the Sergeant's office with the evidence board, booking, and your desk for paperwork. You can also enter the donut shop and crime scenes (bank, jeweler, apartments, pawn shop).
 - **Minigames:** interrogation (suspect quirks, pressure and lawyer meters) and paperwork (typos, crime codes, triplicate stamping).
 - **Career:** rank, best shift, and solved cases are saved to localStorage. Pixel font and a title screen.
+
+## New in v2.3
+- **Sprite redraw:** pedestrians, the player, Ramirez, backup and station NPCs use locked 14×24 pixel sprite sheets (3 directions × walk frames + lying). Heads are no longer layered hair/hat/hood pieces that could stack or drift while walking.
+- **What caused the glitch:** looks were cached by object identity, then mutated in place (witness hats, robbery masks, harbor gear), so a stale sheet kept drawing the old head — or accessories stacked (hat + hood + beanie) with mismatched offsets per facing.
+- **Fix:** each look gets a fingerprint cache key; `mutateLook()` swaps headwear exclusively and rebuilds the sheet. Archetypes (civilian, hoodie, worker, mugger, kid) lock a consistent head at spawn. Faces have eyes/nose, outlined silhouettes, a peaked cap for you, and a flat gold-badged cap + mustache for Ramirez.
 
 ## New in v2.2
 - **Harbor District:** opens at Senior Officer rank. It's a new ring of warehouses, docks and a marina in the southeast, closed off by barricades until you reach that rank. It has its own crimes: cargo theft (thieves drop crates while running), trespassing, and street races where both cars run red lights. It also adds a new case, *The Fishy Shipment*, set in the Pier 9 Warehouse.

@@ -20,7 +20,7 @@ function newCase(){const tpl=CASES[(SAVE.caseIdx||0)%CASES.length];const cats=sh
  const base={};for(const k in ATTR)base[k]=pick(ATTR[k].vals);const names=shuffle(SUSNAMES.slice());
  const sus=[{name:names[0],attrs:Object.assign({},base)}];
  for(let i=0;i<3;i++){const a=Object.assign({},base);const cat=cats[i];a[cat]=pick(ATTR[cat].vals.filter(v=>v!=base[cat]));for(const k in ATTR)if(!cats.includes(k)&&R()<.5)a[k]=pick(ATTR[k].vals);sus.push({name:names[i+1],attrs:a})}
- shuffle(sus);for(const s of sus){const L=randLook();L.hair=ATTR.hair.col[s.attrs.hair];L.hs=ri(1,6);L.hat=null;L.ht=s.attrs.height=='tall'?2:0;L.old=false;s.L=L;s.img=null}
+ shuffle(sus);for(const s of sus){const L=randLook();L.hair=ATTR.hair.col[s.attrs.hair];L.hs=ri(1,6);L.hat=null;L.beanie=null;L.cap=null;L.hood=null;L.mask=false;L.ht=s.attrs.height=='tall'?2:0;L.old=false;s.L=L;s.img=null}
  const culprit=sus.find(s=>cats.every(c=>s.attrs[c]==base[c]));
  const srcs=shuffle(['scene','witness','item']).map((src,i)=>({src,cat:cats[i],val:base[cats[i]],found:false}));
  const C={tpl,sus,culprit,srcs,stage:'investigate',accused:[]};
@@ -28,7 +28,7 @@ function newCase(){const tpl=CASES[(SAVE.caseIdx||0)%CASES.length];const cats=sh
  for(const s of C.srcs){s.text=clueText(s.src,s.cat,s.val,tpl.thing);
   if(s.src=='scene'){const I=INTERIORS[tpl.scene];s.ix=rnd(3,10)*T;s.iy=rnd(4,7)*T}
   if(s.src=='item'){let t;do{t=randTile(v=>v==1)}while(Math.hypot(t.x*T-sb.bx*PP,t.y*T-sb.by*PP)<PP*1.5);s.x=(t.x+.5)*T;s.y=(t.y+.5)*T}
-  if(s.src=='witness'){const b=pick(Object.values(blocks).filter(b=>b!=sb&&b.type!='police'));const w=mkPed();const d=doorOf(b.bx,b.by);w.x=d.x+20;w.y=d.y+6;w.state='witness';w.witness=s;w.name=rname();w.L.hat='#fd3';s.ped=w;s.where=b.name;peds.push(w)}}
+  if(s.src=='witness'){const b=pick(Object.values(blocks).filter(b=>b!=sb&&b.type!='police'));const w=mkPed();const d=doorOf(b.bx,b.by);w.x=d.x+20;w.y=d.y+6;w.state='witness';w.witness=s;w.name=rname();mutateLook(w,{hat:'#fd3'});s.ped=w;s.where=b.name;peds.push(w)}}
  S.case=C}
 function evidenceBoard(){const C=S.case;if(!C){dlg('Evidence Board','<i>Board is empty. Krupke is "working on it."</i>',[['Close']]);return}
  const known=C.srcs.filter(s=>s.found);
@@ -95,4 +95,4 @@ function talkWitness(p){const s=p.witness;if(s.found){dlg('Witness',say(p.name,'
   ['😇 "Take your time. Every detail helps."',()=>{if(R()<.8)witnessTell(p);else{dlg('Witness',say(p.name,'"Hmm... it\'ll come to me. Ask again?"'),[['OK']])}}],
   ['😠 "Spit it out, I don\'t have all day!"',()=>{if(R()<.45)witnessTell(p);else{p.sulk=15;repChange(-1);dlg('Witness',say(p.name,'"RUDE. I\'m not saying anything for at least 15 seconds."'),[['Oops']])}}],
   ['🍩 Offer a donut'+(S.donuts?'':' (none left)'),()=>{if(S.donuts>0){S.donuts--;witnessTell(p,true)}else dlg('Witness',say(p.name,'"You offered me... an empty hand?"'),[['Sorry']])}]])}
-function witnessTell(p,donut){const s=p.witness;dlg('Witness',say(p.name,(donut?'"*munch* Okay okay. "':'')+s.text),[['Thanks! 📓',()=>{findClue(s);p.state='walk';p.L.hat=null}]])}
+function witnessTell(p,donut){const s=p.witness;dlg('Witness',say(p.name,(donut?'"*munch* Okay okay. "':'')+s.text),[['Thanks! 📓',()=>{findClue(s);p.state='walk';mutateLook(p,{hat:null})}]])}
