@@ -1,16 +1,20 @@
 // ---------- render
 let LC,LG;
 function darkness(){const h=S?S.time/60:13;return{dusk:clamp(1-Math.abs(h-19.2)/1.3,0,1),night:clamp((h-18.8)/1.6,0,1)*.9}}
-function worldToScreen(x,y){return{x:(x-cam.x)*cam.z+W/2,y:(y-cam.y)*cam.z+H/2}}
+function worldToScreen(x,y){const z=cam.z|0||1,cx=(cam.x+.5)|0,cy=(cam.y+.5)|0;return{x:(x-cx)*z+((W/2+.5)|0),y:(y-cy)*z+((H/2+.5)|0)}}
 function render(dt){ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#0b0d1a';ctx.fillRect(0,0,W,H);if(!S)return;
- const base=clamp(Math.min(W,H)/215,2,7);const zt=base*(S.scene=='city'?(me.inCar?.78:1):1.15)*(S.mode=='title'?.9:1);cam.z+=(zt-cam.z)*Math.min(1,dt*3);
+ // Integer zoom only: fractional cam.z made every sprite shimmer on phones (esp. the centered player).
+ const base=clamp(Math.min(W,H)/215,2,7)|0;const zt=(base*(S.scene=='city'?(me.inCar?.78:1):1.15)*(S.mode=='title'?.9:1)+1e-6)|0;cam.z=Math.max(1,zt);
  let tx=me.x,ty=me.y;if(me.inCar&&S.scene=='city'){tx+=patrol.vx*.45;ty+=patrol.vy*.45}
  const f=1-Math.exp(-dt*(me.inCar?5:8));cam.x+=(tx-cam.x)*f;cam.y+=(ty-cam.y)*f;
- const vw=W/cam.z,vh=H/cam.z;
+ const z=cam.z,vw=W/z,vh=H/z;
  if(S.scene!='city'){const I=INTERIORS[S.scene];const iw=I.grid[0].length*T,ih=I.grid.length*T;cam.x=iw<vw?iw/2:clamp(cam.x,vw/2,iw-vw/2);cam.y=ih<vh?ih/2:clamp(cam.y,vh/2,ih-vh/2)}
- let sx=0,sy=0;if(S.shake>0&&SAVE.shake!==false){const a=Math.min(4,1+S.shake*7);sx=rnd(-a,a);sy=rnd(-a,a)}
- const ox=Math.round(W/2-(cam.x+sx)*cam.z),oy=Math.round(H/2-(cam.y+sy)*cam.z);ctx.setTransform(cam.z,0,0,cam.z,ox,oy);
- const x0=cam.x-vw/2-20,y0=cam.y-vh/2-20,x1=cam.x+vw/2+20,y1=cam.y+vh/2+20;const vis=e=>e.x>x0&&e.x<x1&&e.y>y0&&e.y<y1+20;
+ // Snap camera to whole world pixels BEFORE computing ox/oy so the player (at cam target) stays pixel-locked on screen.
+ let sx=0,sy=0;if(S.shake>0&&SAVE.shake!==false){const a=Math.min(4,1+S.shake*7)|0;sx=ri(-a,a);sy=ri(-a,a)}
+ const rcx=(cam.x+.5)|0,rcy=(cam.y+.5)|0; // round
+ const ox=((W/2+.5)|0)-((rcx+sx)*z),oy=((H/2+.5)|0)-((rcy+sy)*z);
+ ctx.setTransform(z,0,0,z,ox,oy);ctx.imageSmoothingEnabled=false;
+ const x0=rcx-vw/2-20,y0=rcy-vh/2-20,x1=rcx+vw/2+20,y1=rcy+vh/2+20;const vis=e=>e.x>x0&&e.x<x1&&e.y>y0&&e.y<y1+20;
  const now=performance.now();
  if(S.scene=='city'){
   const sx0=clamp(Math.floor(x0),0,N*T),sy0=clamp(Math.floor(y0),0,N*T),sw=clamp(Math.ceil(x1),0,N*T)-sx0,sh=clamp(Math.ceil(y1),0,N*T)-sy0;
@@ -51,10 +55,10 @@ function render(dt){ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=fals
    for(const c of cars)if(vis(c)&&!c.busted)head(c,c.ang,58,20,.9);head(patrol,patrol.a,75,24,.95);glow(patrol.x,patrol.y,14,.5);
    if(!me.inCar){head({x:me.x,y:me.y-6},me.dir,70,22,.9);glow(me.x,me.y-6,16,.7)}if(window.extLights)extLights(glow);
    if(S.siren&&me.inCar){glow(patrol.x,patrol.y,40,.5)}
-   ctx.drawImage(LC,0,0);ctx.globalCompositeOperation='lighter';for(const l of LAMPS)if(vis(l)){const s=worldToScreen(l.x,l.y),rr=26*cam.z;const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,rr);g.addColorStop(0,`rgba(255,200,90,${.22*dk.night})`);g.addColorStop(1,'rgba(255,200,90,0)');ctx.fillStyle=g;ctx.fillRect(s.x-rr,s.y-rr,rr*2,rr*2)}if(window.extGlowAdd)extGlowAdd(dk,vis);ctx.globalCompositeOperation='source-over';ctx.setTransform(cam.z,0,0,cam.z,ox,oy);ctx.globalAlpha=Math.min(1,dk.night*1.5);
+   ctx.drawImage(LC,0,0);ctx.globalCompositeOperation='lighter';for(const l of LAMPS)if(vis(l)){const s=worldToScreen(l.x,l.y),rr=26*cam.z;const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,rr);g.addColorStop(0,`rgba(255,200,90,${.22*dk.night})`);g.addColorStop(1,'rgba(255,200,90,0)');ctx.fillStyle=g;ctx.fillRect(s.x-rr,s.y-rr,rr*2,rr*2)}if(window.extGlowAdd)extGlowAdd(dk,vis);ctx.globalCompositeOperation='source-over';ctx.setTransform(z,0,0,z,ox,oy);ctx.imageSmoothingEnabled=false;ctx.globalAlpha=Math.min(1,dk.night*1.5);
    const sx0=clamp(Math.floor(x0),0,N*T),sy0=clamp(Math.floor(y0),0,N*T),sw=clamp(Math.ceil(x1),0,N*T)-sx0,sh=clamp(Math.ceil(y1),0,N*T)-sy0;if(sw>0&&sh>0)ctx.drawImage(WIN,sx0,sy0,sw,sh,sx0,sy0,sw,sh);ctx.globalAlpha=1}
   if(S.siren&&me.inCar){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=(now/150|0)%2?'rgba(255,0,0,.07)':'rgba(0,60,255,.07)';ctx.fillRect(0,0,W,H)}if(window.extScreenFx){ctx.setTransform(1,0,0,1,0,0);extScreenFx(now,dk)}
-  ctx.setTransform(cam.z,0,0,cam.z,ox,oy)}
+  ctx.setTransform(z,0,0,z,ox,oy);ctx.imageSmoothingEnabled=false}
  // overhead markers
  if(S.scene=='city'){for(const p of peds){if(p.inCar||!vis(p))continue;if(p.crime&&!p.cuffed)bang(p.x,p.y-26,now,CR[p.crime].minor?'#fc3':'#f22');if(p.state=='witness')qmark(p.x,p.y-26,now)}
   for(const k in blocks){const b=blocks[k];if(!ENTERABLE[b.type])continue;const d=doorOf(b.bx,b.by);if(!vis(d))continue;const near=Math.hypot(d.x-me.x,d.y-me.y)<40;if(near&&!me.inCar){ctx.fillStyle='rgba(255,255,255,'+(.4+.3*Math.sin(now/200))+')';ctx.fillRect(d.x-6,d.y+2,12,2)}

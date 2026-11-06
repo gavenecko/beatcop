@@ -155,27 +155,44 @@ function drawHead(p,L,dir,hx,hy,tx,bw){
 }
 
 const sprCache=new Map();
+const FLICK={rebuild:0,face:0,on:false};const FACE=new WeakMap();
 function personSprite(L){
   const key=lookKey(L);let s=sprCache.get(key);if(s){L._sk=key;return s}
+  FLICK.rebuild++;
   const FW_=14,FH=24;
-  const[c,g]=mkCanvas(FW_*10,FH);
+  const[c,g]=mkCanvas(FW_*10,FH);g.imageSmoothingEnabled=false;
   for(let d=0;d<3;d++)for(let f=0;f<3;f++)drawPersonFrame(g,L,d,f,(d*3+f)*FW_,0);
   // lying frame (index 9)
-  const[t,tg]=mkCanvas(FW_,FH);drawPersonFrame(tg,L,0,0,0,0);
-  g.save();g.translate(9*FW_+7,14);g.rotate(Math.PI/2);g.drawImage(t,-12,-7);g.restore();
+  const[t,tg]=mkCanvas(FW_,FH);tg.imageSmoothingEnabled=false;drawPersonFrame(tg,L,0,0,0,0);
+  g.save();g.translate(9*FW_+7,14);g.rotate(Math.PI/2);g.imageSmoothingEnabled=false;g.drawImage(t,-12,-7);g.restore();
   sprCache.set(key,c);L._sk=key;return c;
 }
+// Facing with hysteresis so diagonals / stick noise don't flip front↔side every frame
+function faceOf(L,dir){
+  const c=Math.cos(dir),s=Math.sin(dir),ac=Math.abs(c);
+  const prev=FACE.get(L);let d,flip=false;
+  if(prev&&prev.d===2){ // stay side until clearly front/back
+    if(ac>=0.55){d=2;flip=c<0}else d=s<0?1:0;
+  }else if(prev){ // stay front/back until clearly side
+    if(ac>=0.82){d=2;flip=c<0}else d=s<0?1:0;
+  }else{
+    if(ac>0.7){d=2;flip=c<0}else d=s<0?1:0;
+  }
+  if(!prev||prev.d!==d||prev.flip!==flip){FLICK.face++;FACE.set(L,{d,flip});return FACE.get(L)}
+  return prev;
+}
 function drawPerson(g,L,x,y,dir,anim,state){
-  if(L._sk&&L._sk!==lookKey(L))L._sk=null; // look mutated in place → rebuild sheet
-  const s=personSprite(L);const FW_=14,FH=24;let fi,flip=false;
+  const key=lookKey(L);
+  if(L._sk!==key){L._sk=null} // look mutated in place → rebuild sheet
+  const sheet=personSprite(L);const FW_=14,FH=24;let fi,flip=false;
   if(state==='down'){fi=9}
-  else{let d=0;if(Math.abs(Math.cos(dir))>.7){d=2;flip=Math.cos(dir)<0}else d=Math.sin(dir)<0?1:0;
-    const f=anim<0?0:[1,0,2,0][(anim|0)%4];fi=d*3+f}
-  // whole-sprite bob keeps head locked to body (no independent head jitter)
-  const bob=(state!=='down'&&anim>=0&&((anim|0)%2===1))?-1:0;
-  x=Math.round(x);y=Math.round(y);
-  if(flip){g.save();g.translate(x,0);g.scale(-1,1);g.drawImage(s,fi*FW_,0,FW_,FH,-7,y-22+bob,FW_,FH);g.restore()}
-  else g.drawImage(s,fi*FW_,0,FW_,FH,x-7,y-22+bob,FW_,FH);
+  else{const fa=faceOf(L,dir);flip=fa.flip;const f=anim<0?0:[1,0,2,0][(anim|0)%4];fi=fa.d*3+f}
+  // Bob disabled: a ±1 world-px bob under non-integer (or transitioning) zoom reads as head flicker on phones.
+  // Walk cycle already animates legs via frame index.
+  x=(x+.5)|0;y=(y+.5)|0; // MUST match camera rounding in render()
+  g.imageSmoothingEnabled=false;
+  if(flip){g.save();g.translate(x,0);g.scale(-1,1);g.imageSmoothingEnabled=false;g.drawImage(sheet,fi*FW_,0,FW_,FH,-7,y-22,FW_,FH);g.restore()}
+  else g.drawImage(sheet,fi*FW_,0,FW_,FH,x-7,y-22,FW_,FH);
 }
 function portraitURL(L){
   const[c,g]=mkCanvas(14,24);drawPersonFrame(g,L,0,0,0,0);

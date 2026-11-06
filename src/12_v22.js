@@ -138,4 +138,4 @@ settings=function(fromTitle){const pct=v=>Math.round(v*100)+'%',cyc=(a,v)=>a[(a.
  ['🎓 Tutorial next shift: '+(SAVE.tutForce||!SAVE.tutDone?'YES':'NO'),()=>{SAVE.tutForce=!(SAVE.tutForce||!SAVE.tutDone);if(!SAVE.tutForce)SAVE.tutDone=true;re()}],
  [fromTitle?'✔ Done':'◀ Back',()=>{if(fromTitle)S.modal=false;else{S.paused=false;togglePause()}}]],true)};
 if(S&&!S.x2)initX2();layout();
-Object.assign(window.__bc,{spawnHarbor,harborLocked,court,snap,photoTargets,courtOdds,settings,copDesk,trafficStop,x2:()=>S.x2,setRain:v=>{S.x2.rainOn=v;S.x2.rain=v?1:0},HB});
+Object.assign(window.__bc,{FLICK,lookKey,personSprite,faceOf,sprCache,spawnHarbor,harborLocked,court,snap,photoTargets,courtOdds,settings,copDesk,trafficStop,x2:()=>S.x2,setRain:v=>{S.x2.rainOn=v;S.x2.rain=v?1:0},HB});

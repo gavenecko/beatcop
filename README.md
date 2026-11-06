@@ -1,4 +1,4 @@
-# Beat Cop: Donut Justice (v2.3.0)
+# Beat Cop: Donut Justice (v2.3.1)
 
 A top-down, GTA-style 2D pixel-art beat cop simulator in one self-contained `index.html` with no external assets.
 
@@ -13,6 +13,9 @@ A top-down, GTA-style 2D pixel-art beat cop simulator in one self-contained `ind
 - **Interiors:** the station has a front desk, interrogation room, cells, the Sergeant's office with the evidence board, booking, and your desk for paperwork. You can also enter the donut shop and crime scenes (bank, jeweler, apartments, pawn shop).
 - **Minigames:** interrogation (suspect quirks, pressure and lawyer meters) and paperwork (typos, crime codes, triplicate stamping).
 - **Career:** rank, best shift, and solved cases are saved to localStorage. Pixel font and a title screen.
+
+## New in v2.3.1
+- **Flicker fix:** camera zoom is integer-only and snapped to whole world pixels (fractional zoom + mismatched rounding made the centered player shimmer). Facing uses hysteresis so diagonals don't flip front↔side every frame. Walk bob removed. `imageSmoothingEnabled` forced off on sprite draws. Debug counters: `__bc.FLICK`.
 
 ## New in v2.3
 - **Sprite redraw:** pedestrians, the player, Ramirez, backup and station NPCs use locked 14×24 pixel sprite sheets (3 directions × walk frames + lying). Heads are no longer layered hair/hat/hood pieces that could stack or drift while walking.
